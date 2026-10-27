@@ -20,6 +20,17 @@ test('首页按六十甲子显示卦象和传统宜忌，无旧 Tyme 28 宿 UI',
   await expect(page.locator('#calendar-grid [data-date]')).toHaveCount(35);
 });
 
+test('PR #2 品牌 Logo 在页面顶栏和 favicon 正确加载',async ({page}) => {
+  await openCalendar(page);
+  const logo=page.locator('a.brand img.brand-logo');
+  await expect(logo).toBeVisible();
+  await expect(logo).toHaveAttribute('alt','');
+  await expect(logo).toHaveAttribute('src','/DayPillar/brand/daypillar-logo.svg');
+  expect(await logo.evaluate(el => el.complete && el.naturalWidth > 0)).toBe(true);
+  await expect(page.locator('a.brand strong')).toHaveText('时序');
+  await expect(page.locator('link[rel="icon"]')).toHaveAttribute('href','/DayPillar/brand/daypillar-logo.svg');
+});
+
 test('同月切换不破坏按钮节点和键盘焦点，搜索只高亮',async ({page}) => {
   await openCalendar(page);
   const original=await page.locator('#calendar-grid [data-date="2026-10-17"]').elementHandle();

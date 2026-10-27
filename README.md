@@ -1,5 +1,7 @@
 # DayPillar · 传统历法日历
 
+品牌 Logo：正式采纳 [PR #2](https://github.com/chuyua/DayPillar/pull/2) 的 SVG 资产，页头显示 `public/brand/daypillar-logo.svg` 与中文“时序”字标，浏览器 favicon 使用同一图形。资产另含英文横向字标、墨绿单色与深色反白版本；尺寸、间距和色值参见 [品牌用法](docs/brand.md)。四张 SVG 保留原始矢量，不依赖外部资源；发布目录由 Vite 使用 Pages 项目子路径自动组织。
+
 本项目是 `tyme4ts` 驱动的静态历法前端，与旧站 `https://tyme.pages.dev/` 并行，不会自动覆盖现网。
 
 ## 数据及授权边界

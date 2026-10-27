@@ -35,7 +35,8 @@ function shell(): void {
   $('#app').innerHTML = `
     <header class="topbar">
       <a class="brand" href="${import.meta.env.BASE_URL}" aria-label="时序日历首页">
-        <span class="brand-seal" aria-hidden="true">序</span>
+        <img class="brand-logo" src="${import.meta.env.BASE_URL}brand/daypillar-logo.svg"
+          width="43" height="43" alt="" decoding="async" />
         <span><strong>时序</strong><small>传统历法 · 数字新生</small></span>
       </a>
       <span class="header-feature">历法月览 · 六十甲子卦象</span>

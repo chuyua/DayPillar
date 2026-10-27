@@ -6,6 +6,16 @@ import {join} from 'node:path';
 test('GitHub Pages output has a project-relative base and intact hashed assets', () => {
   const html = readFileSync('dist/index.html', 'utf8');
   assert.match(html, /<html[^>]+lang="zh-CN"/);
+  assert.match(html, /<link rel="icon" type="image\/svg\+xml" href="\/DayPillar\/brand\/daypillar-logo\.svg"/);
+  const brandAssets = ['daypillar-logo.svg','daypillar-lockup.svg',
+    'daypillar-mark-mono.svg','daypillar-mark-reverse.svg'];
+  for (const name of brandAssets) {
+    const deployed = readFileSync(join('dist','brand',name),'utf8');
+    const source = readFileSync(join('public','brand',name),'utf8');
+    assert.equal(deployed,source,`品牌原始 SVG 必须完整发布：${name}`);
+    assert.match(deployed, /<svg /);
+    assert.doesNotMatch(deployed, /<script|<foreignObject|<image|\s(?:href|xlink:href)=["']https?:\/\/|onload=|onclick=/i);
+  }
   const assets = [...html.matchAll(/(?:src|href)="(\/DayPillar\/assets\/[^"]+)"/g)];
   assert.ok(assets.length >= 2, 'The built HTML must reference JS and CSS under /DayPillar/');
   for (const [, asset] of assets) {
@@ -17,6 +27,7 @@ test('GitHub Pages output has a project-relative base and intact hashed assets',
     readFileSync(join('dist', asset.slice('/DayPillar/'.length)), 'utf8')).join('\n');
   assert.ok(js.includes('天罡'), '甲子日的对应名称必须编入首页');
   assert.ok(js.includes('day-gua'), '每个日历格必须显示对应卦名与名称');
+  assert.ok(js.includes('brand-logo'), '页头必须使用已采纳的品牌 Logo');
   assert.ok(js.includes('gua-highlight'), '右侧日期详情必须显示日干支对应卦象');
   assert.ok(js.includes('mode-button'), '必须保留简洁/详细视图切换');
   assert.ok(js.includes('detail-backdrop'), '移动端必须提供可关闭的日期详情面板');
