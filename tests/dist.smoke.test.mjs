@@ -16,9 +16,22 @@ test('GitHub Pages output has a project-relative base and intact hashed assets',
   const js = scripts.map(([, asset]) =>
     readFileSync(join('dist', asset.slice('/DayPillar/'.length)), 'utf8')).join('\n');
   assert.ok(js.includes('天罡'), '甲子日的对应名称必须编入首页');
-  assert.ok(js.includes('gua-catalog'), '卦象映射应直接在首页，而非独立分页');
-  for (const removed of ['Tyme 值日体系', '廿八', '星宿 · 双口径']) {
+  assert.ok(js.includes('day-gua'), '每个日历格必须显示对应卦名与名称');
+  assert.ok(js.includes('gua-highlight'), '右侧日期详情必须显示日干支对应卦象');
+  for (const removed of ['gua-catalog', 'catalog-content', 'gua-search', 'Tyme 值日体系', '星宿 · 双口径']) {
     assert.ok(!js.includes(removed), `不应继续显示被屏蔽的 Tyme 28 宿体系：${removed}`);
   }
+  // tyme4ts 自带 28 宿字面量可能保留在第三方打包代码中，但应用不再调用和渲染该体系。
+  const uiSource = readFileSync('src/main.ts','utf8');
+  const calendarSource = readFileSync('src/calendar.ts','utf8');
+  assert.ok(!uiSource.includes('廿八'));
+  assert.ok(!uiSource.includes('star28'));
+  assert.ok(!calendarSource.includes('getTwentyEightStar'));
+  assert.ok(!calendarSource.includes('star28'));
+  assert.ok(!uiSource.includes('catalog-view'));
+  assert.ok(!uiSource.includes('renderCatalog'));
+  assert.ok(!uiSource.includes('gua-search'));
+  assert.match(uiSource, /day-gua-name/);
+  assert.match(uiSource, /day-ying/);
   assert.doesNotMatch(html, /\/src\/main\.ts/);
 });

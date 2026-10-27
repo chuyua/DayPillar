@@ -11,7 +11,6 @@ const current = parseISO(new URLSearchParams(location.search).get('date') ?? '')
   ?? {year: 2026, month: 10, day: 27};
 let selected = formatISO(current.year, current.month, current.day);
 let view = {year: current.year, month: current.month};
-let keyword = '';
 
 const $ = <T extends Element = HTMLElement>(selector: string): T => {
   const element = document.querySelector<T>(selector);
@@ -28,10 +27,7 @@ function shell(): void {
         <span class="brand-seal" aria-hidden="true">序</span>
         <span><strong>时序</strong><small>传统历法 · 数字新生</small></span>
       </a>
-      <nav class="tabs" aria-label="页面导航">
-        <a class="tab active" href="#calendar-view">历法月览</a>
-        <a class="tab" href="#gua-catalog">卦象映射</a>
-      </nav>
+      <span class="header-feature">历法月览 · 六十甲子卦象</span>
       <span class="header-source">历法引擎 <strong>tyme4ts</strong></span>
     </header>
     <main class="page">
@@ -64,12 +60,6 @@ function shell(): void {
           <div id="date-detail"></div>
         </aside>
       </section>
-      <section id="gua-catalog" class="catalog-view" aria-label="六十甲子卦象映射">
-        <div class="catalog-heading"><div><span class="eyebrow">SIXTY-DAY CYCLE</span><h2>六十甲子 · 卦象映射</h2>
-          <p>按日干支与原始 60 组关系顺序对应。甲子日为天风姤 · 天罡；六十日循环。</p></div>
-          <input id="gua-search" type="search" placeholder="搜索干支、卦名或对应名称…" aria-label="搜索干支卦象" /></div>
-        <div id="catalog-content" class="catalog-grid"></div>
-      </section>
       <footer class="site-footer"><span>时序 / TIME &amp; TRADITION</span><span>历法 · tyme4ts 1.5.4　|　27 宿 · 传统公开规则　|　六十甲子 · 卦象映射</span></footer>
     </main>
     <div class="toast" id="error-toast" role="alert" hidden></div>`;
@@ -94,7 +84,8 @@ function dayCell(item: CalendarDay): string {
   return `<button type="button" class="${cls}" data-date="${item.iso}" aria-label="${escapeHtml(label)}" aria-pressed="${item.iso === selected}">
     <span class="day-top"><b>${item.day}</b><span class="day-lunar">${escapeHtml(minor)}</span></span>
     <span class="day-cycle">${escapeHtml(item.dayCycle)}日 <span class="tiny-dot">·</span> ${escapeHtml(item.duty)}日</span>
-    <span class="day-star">${escapeHtml(item.star27)} <span class="day-ying">· ${escapeHtml(gua?.ying ?? '—')}</span></span>
+    <span class="day-star">${escapeHtml(item.star27)}</span>
+    <span class="day-gua"><span class="day-gua-name">${escapeHtml(gua?.gua ?? '—')}</span><span class="day-ying">${escapeHtml(gua?.ying ?? '—')}</span></span>
     ${item.term ? `<span class="day-term">${escapeHtml(item.term)}</span>` : item.festival ? `<span class="day-festival">${escapeHtml(item.festival)}</span>` : ''}
   </button>`;
 }
@@ -148,14 +139,6 @@ function renderDetail(): void {
     </div>`;
 }
 
-function renderCatalog(): void {
-  const list = guaEntries().filter(r => `${r.dayCycle} ${r.gua} ${r.ying}`.includes(keyword));
-  $('#catalog-content').innerHTML = list.length ? list.map(r => `<article class="catalog-entry">
-    <span class="catalog-number">${escapeHtml(r.dayCycle)}</span>
-    <div><h3>${escapeHtml(r.gua)}</h3><p>${escapeHtml(r.ying)}</p></div>
-  </article>`).join('') : '<p class="no-results">没有找到匹配的卦象。</p>';
-}
-
 function pickDate(value: string): void {
   const date = parseISO(value);
   if (!date) {showError('日期超出当前查询支持范围（1900—2100 年）');return;}
@@ -188,10 +171,6 @@ function initEvents(): void {
     if (!/^\d{4}-\d{2}$/.test(v)) return;
     pickDate(`${v}-01`);
   });
-  $<HTMLInputElement>('#gua-search').addEventListener('input',e => {
-    keyword = (e.target as HTMLInputElement).value.trim();
-    renderCatalog();
-  });
   window.addEventListener('popstate', () => {
     const parsed = parseISO(new URLSearchParams(location.search).get('date') ?? '');
     if (parsed) pickDate(formatISO(parsed.year,parsed.month,parsed.day));
@@ -201,7 +180,6 @@ function initEvents(): void {
 shell();
 initEvents();
 renderCalendar();
-renderCatalog();
 // 可被自动化截图测试和诊断脚本只读获取，非业务接口。
 Object.defineProperty(window,'__TYME_AUDIT__', {
   value: Object.freeze({starScheme:'traditional-27',guayings:guaEntries().length}),
