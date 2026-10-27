@@ -228,13 +228,15 @@ function openDetail(): void {
   $('#detail-backdrop').removeAttribute('hidden');
   document.body.classList.add('drawer-open');
   panel.scrollTop = 0;
-  // 移动端 visibility/transform 切换需要先完成一次布局，
-  // 否则隐藏态下立即 focus() 会被 Chromium 忽略。
-  requestAnimationFrame(() => {
+  const focusClose = (): void => {
     if (panel.classList.contains('is-open')) {
       $<HTMLButtonElement>('#detail-close').focus({preventScroll:true});
     }
-  });
+  };
+  // 某些移动端 Chrome 在底部抽屉滑入过程中忽略焦点转移，
+  // 动画帧先试一次，完成滑入后再确认一次。
+  requestAnimationFrame(focusClose);
+  panel.addEventListener('transitionend',focusClose,{once:true});
 }
 
 function pickDate(value: string, options: {focusDay?: boolean; open?: boolean} = {}): void {
