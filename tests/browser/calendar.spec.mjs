@@ -1,7 +1,15 @@
 import {test,expect} from '@playwright/test';
 
-test('首页按六十甲子显示卦象和传统宜忌，无旧 Tyme 28 宿 UI',async ({page}) => {
+async function openCalendar(page) {
+  const errors=[];
+  page.on('pageerror',error => errors.push(error.message));
   await page.goto('/DayPillar/?date=2026-10-17');
+  await expect(page.locator('#calendar-grid [data-date]').first()).toBeVisible();
+  expect(errors).toEqual([]);
+}
+
+test('首页按六十甲子显示卦象和传统宜忌，无旧 Tyme 28 宿 UI',async ({page}) => {
+  await openCalendar(page);
   await expect(page.locator('#calendar-grid [data-date="2026-10-17"]')).toHaveAttribute('aria-pressed','true');
   await expect(page.locator('#calendar-grid [data-date="2026-10-17"] .day-gua')).toContainText('天风姤');
   await expect(page.locator('#calendar-grid [data-date="2026-10-17"] .day-gua')).toContainText('天罡');
@@ -13,7 +21,7 @@ test('首页按六十甲子显示卦象和传统宜忌，无旧 Tyme 28 宿 UI',
 });
 
 test('同月切换不破坏按钮节点和键盘焦点，搜索只高亮',async ({page}) => {
-  await page.goto('/DayPillar/?date=2026-10-17');
+  await openCalendar(page);
   const original=await page.locator('#calendar-grid [data-date="2026-10-17"]').elementHandle();
   const next=page.locator('#calendar-grid [data-date="2026-10-18"]');
   await next.click();
@@ -33,7 +41,7 @@ test('同月切换不破坏按钮节点和键盘焦点，搜索只高亮',async 
 });
 
 test('跳转年份边界、不刷新即可切换月份',async ({page}) => {
-  await page.goto('/DayPillar/?date=2026-10-17');
+  await openCalendar(page);
   await page.locator('#year-jump').selectOption('1900');
   await page.locator('#month-jump').selectOption('1');
   await expect(page.locator('#month-label')).toContainText('1900 年');
@@ -48,7 +56,7 @@ test('跳转年份边界、不刷新即可切换月份',async ({page}) => {
 });
 
 test('深色配色与浏览器 theme-color 同步',async ({page}) => {
-  await page.goto('/DayPillar/?date=2026-10-17');
+  await openCalendar(page);
   await page.emulateMedia({colorScheme:'dark'});
   await expect(page.locator('meta[name="theme-color"]')).toHaveAttribute('content','#152624');
   const color=await page.locator('body').evaluate(el => getComputedStyle(el).backgroundColor);
@@ -61,7 +69,7 @@ test.describe('移动端日期交互',() => {
   test.use({viewport:{width:390,height:844},isMobile:true,hasTouch:true});
 
   test('选中日期显示抽屉，Esc 关闭后焦点返回日期，水平划动换月',async ({page}) => {
-    await page.goto('/DayPillar/?date=2026-10-17');
+    await openCalendar(page);
     const button=page.locator('#calendar-grid [data-date="2026-10-18"]');
     await button.click();
     await expect(page.locator('#detail-panel')).toHaveClass(/is-open/);
