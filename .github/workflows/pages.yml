@@ -32,15 +32,22 @@ jobs:
         env:
           BASE_PATH: /DayPillar/
       - run: node --test tests/dist.smoke.test.mjs
+      # Private repos on plans without private Pages still retain a verified build.
+      - uses: actions/upload-artifact@v4
+        with:
+          name: daypillar-static-site
+          path: dist/
+          if-no-files-found: error
+          retention-days: 14
       - uses: actions/configure-pages@v5
-        if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
+        if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request' && !github.event.repository.private
       - uses: actions/upload-pages-artifact@v3
-        if: github.event_name != 'pull_request'
+        if: github.event_name != 'pull_request' && !github.event.repository.private
         with:
           path: dist
 
   deploy:
-    if: github.event_name != 'pull_request'
+    if: github.event_name != 'pull_request' && !github.event.repository.private
     needs: build
     runs-on: ubuntu-24.04
     environment:
