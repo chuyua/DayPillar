@@ -36,6 +36,10 @@ test('GitHub Pages output has a project-relative base and intact hashed assets',
   assert.ok(!uiSource.includes('gua-search'));
   assert.match(uiSource, /day-gua-name/);
   assert.match(uiSource, /day-ying/);
+  const cssSource = readFileSync('src/style.css','utf8');
+  for (const selector of ['.intro{', '.tabs{', '.tab{', '.catalog-grid{']) {
+    assert.ok(!cssSource.includes(selector), `Unused selector must be removed: ${selector}`);
+  }
   assert.match(uiSource, /if \(changedMonth\) renderCalendar\(\)/);
   assert.match(uiSource, /updateSelectedDay\(previous\)/);
   assert.match(uiSource, /monthCells\.find\(/);
