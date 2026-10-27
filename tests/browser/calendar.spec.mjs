@@ -40,6 +40,20 @@ test('同月切换不破坏按钮节点和键盘焦点，搜索只高亮',async 
   await expect(page.locator('#calendar-grid [data-date="2026-10-17"] .day-gua')).toBeVisible();
 });
 
+test('本月查询不误高亮相邻月补齐格，来回翻月仍保留卦象',async ({page}) => {
+  await openCalendar(page);
+  await page.locator('#day-filter').fill('2026-09');
+  await expect(page.locator('#filter-result')).toContainText('本月匹配 0 / 31 天');
+  await expect(page.locator('#calendar-grid .is-matched')).toHaveCount(0);
+  await page.locator('#day-filter').fill('天罡');
+  await expect(page.locator('#filter-result')).toContainText('本月匹配 1 / 31 天');
+  await page.locator('[aria-label="下个月"]').click();
+  await page.locator('[aria-label="上个月"]').click();
+  await expect(page.locator('#calendar-grid [data-date="2026-10-17"] .day-gua')).toContainText('天罡');
+  await expect(page.locator('#filter-result')).toContainText('本月匹配 1 / 31 天');
+  await expect(page.locator('#error-toast')).toBeHidden();
+});
+
 test('跳转年份边界、不刷新即可切换月份',async ({page}) => {
   await openCalendar(page);
   await page.locator('#year-jump').selectOption('1900');

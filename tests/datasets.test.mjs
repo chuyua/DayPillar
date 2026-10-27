@@ -4,6 +4,26 @@ import {lookupTraditionalStar, TRADITIONAL_STARS, MONTH_STARTS} from '../src/dat
 import {GUA_YING, DAY_CYCLES, guaEntries, lookupDayGua} from '../src/data/gua-ying.mjs';
 import {getHexagramLines, renderHexagram} from '../src/data/hexagram.mjs';
 import {matchesDay} from '../src/data/day-filter.mjs';
+import {boundedCacheGet} from '../src/data/bounded-cache.mjs';
+
+test('有界缓存：命中不重算、最近访问保留、异常不污染数据', () => {
+  const cache=new Map();
+  let calls=0;
+  const load=key => boundedCacheGet(cache,key,3,() => ({key,n:++calls}));
+  const first=load('a');
+  load('b');
+  load('c');
+  assert.equal(load('a'),first);
+  assert.equal(calls,3);
+  load('d');
+  assert.equal(cache.size,3);
+  assert.equal(cache.has('b'),false);
+  load('b');
+  assert.equal(calls,5);
+  assert.ok(cache.size <= 3);
+  assert.throws(() => boundedCacheGet(cache,'error',3,() => {throw Error('failed');}),/failed/);
+  assert.equal(cache.has('error'),false);
+});
 
 test('公开二十七宿规则：27 唯一宿名、12 个月首宿', () => {
   assert.equal(TRADITIONAL_STARS.length, 27);

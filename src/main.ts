@@ -6,6 +6,7 @@ import {
 import {guaEntries, lookupDayGua} from './data/gua-ying.mjs';
 import {renderHexagram} from './data/hexagram.mjs';
 import {matchesDay} from './data/day-filter.mjs';
+import {boundedCacheGet} from './data/bounded-cache.mjs';
 
 const today = todayInChina();
 const current = parseISO(new URLSearchParams(location.search).get('date') ?? '')
@@ -15,6 +16,9 @@ let selected = formatISO(current.year, current.month, current.day);
 let view = {year: current.year, month: current.month};
 let monthKey = '';
 let monthCells: CalendarDay[] = [];
+// 单用户低资源场景：只缓存最近 3 个月的格子及 32 个日期的宜忌。
+const monthCache = new Map<string, CalendarDay[]>();
+const tabooCache = new Map<string, ReturnType<typeof getDayTaboos>>();
 let compact = window.matchMedia('(max-width: 680px)').matches;
 let dayFilter = '';
 let ignoreGridClickUntil = 0;
@@ -104,7 +108,7 @@ function renderCalendar(): void {
   try {
     const nextKey = `${view.year}-${view.month}`;
     if (monthKey !== nextKey) {
-      monthCells = getMonthCells(view.year, view.month);
+      monthCells = boundedCacheGet(monthCache, nextKey, 3, () => getMonthCells(view.year, view.month));
       monthKey = nextKey;
     }
     $('#calendar-grid').innerHTML = monthCells.map(dayCell).join('');
@@ -119,13 +123,16 @@ function renderCalendar(): void {
 function applyDayFilter(): void {
   let matches = 0;
   let inMonth = 0;
-  for (const cell of monthCells) {
-    const button = document.querySelector<HTMLButtonElement>(`#calendar-grid [data-date="${cell.iso}"]`);
+  // 一次获取网格按钮，避免每键输入 35–42 次独立的 DOM selector 查询。
+  const buttons = $('#calendar-grid').querySelectorAll<HTMLButtonElement>('[data-date]');
+  for (let index = 0; index < monthCells.length; index++) {
+    const cell = monthCells[index];
+    const button = buttons[index];
     if (!button) continue;
     const active = cell.year === view.year && cell.month === view.month;
-    const found = matchesDay(cell, dayFilter);
+    const found = active && matchesDay(cell, dayFilter);
     if (active) {inMonth += 1; if (found) matches += 1;}
-    button.classList.toggle('is-dimmed', Boolean(dayFilter && !found));
+    button.classList.toggle('is-dimmed', Boolean(dayFilter && active && !found));
     button.classList.toggle('is-matched', Boolean(dayFilter && found));
   }
   $('#filter-result').textContent = dayFilter ? `本月匹配 ${matches} / ${inMonth} 天` : '';
@@ -169,7 +176,10 @@ function renderDetail(): void {
   const weekday = '日一二三四五六'[day.weekday];
   const dayGua = lookupDayGua(day.dayCycle);
   let taboos: ReturnType<typeof getDayTaboos> | null = null;
-  try { taboos = getDayTaboos(day.year, day.month, day.day); }
+  try {
+    taboos = boundedCacheGet(tabooCache, day.iso, 32,
+      () => getDayTaboos(day.year, day.month, day.day));
+  }
   catch (error) { showError(`宜忌资料读取失败：${String(error)}`); }
   const renderTaboos = (names: string[]): string =>
     names.length ? names.map(name => `<span class="taboo-tag">${escapeHtml(name)}</span>`).join('')
@@ -254,7 +264,7 @@ function pickDate(value: string, options: {focusDay?: boolean; open?: boolean} =
   if (changedMonth) renderCalendar();
   else {
     updateSelectedDay(previous);
-    renderDetail();
+    if (previous !== selected) renderDetail();
   }
   if (options.focusDay) {
     document.querySelector<HTMLButtonElement>(`#calendar-grid [data-date="${selected}"]`)?.focus();
