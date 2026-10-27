@@ -73,6 +73,7 @@ test.describe('移动端日期交互',() => {
     const button=page.locator('#calendar-grid [data-date="2026-10-18"]');
     await button.click();
     await expect(page.locator('#detail-panel')).toHaveClass(/is-open/);
+    await expect(page.locator('#detail-close')).toBeVisible();
     await expect(page.locator('#detail-close')).toBeFocused();
     await expect(page.locator('#date-detail .taboo-group')).toHaveCount(2);
     await page.keyboard.press('Escape');

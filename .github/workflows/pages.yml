@@ -36,7 +36,7 @@ jobs:
       # 官方 Ubuntu 24.04 Runner 已自带 Chrome，不额外下载浏览器及 apt 依赖。
       - run: google-chrome --version
       - run: npm run test:e2e
-      - uses: actions/upload-artifact@v5
+      - uses: actions/upload-artifact@v6
         if: failure()
         with:
           name: daypillar-browser-test-failures
@@ -44,7 +44,7 @@ jobs:
           if-no-files-found: ignore
           retention-days: 7
       # Private repos on plans without private Pages still retain a verified build.
-      - uses: actions/upload-artifact@v5
+      - uses: actions/upload-artifact@v6
         with:
           name: daypillar-static-site
           path: dist/

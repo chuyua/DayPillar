@@ -227,7 +227,14 @@ function openDetail(): void {
   panel.setAttribute('aria-modal', 'true');
   $('#detail-backdrop').removeAttribute('hidden');
   document.body.classList.add('drawer-open');
-  $<HTMLButtonElement>('#detail-close').focus();
+  panel.scrollTop = 0;
+  // 移动端 visibility/transform 切换需要先完成一次布局，
+  // 否则隐藏态下立即 focus() 会被 Chromium 忽略。
+  requestAnimationFrame(() => {
+    if (panel.classList.contains('is-open')) {
+      $<HTMLButtonElement>('#detail-close').focus({preventScroll:true});
+    }
+  });
 }
 
 function pickDate(value: string, options: {focusDay?: boolean; open?: boolean} = {}): void {
