@@ -119,6 +119,20 @@ test('深色配色与浏览器 theme-color 同步',async ({page}) => {
   await expect(page.locator('meta[name="theme-color"]')).toHaveAttribute('content','#f7f7f2');
 });
 
+test('减少动态效果时重复开关移动抽屉，焦点恢复正常',async ({page}) => {
+  await page.setViewportSize({width:390,height:844});
+  await page.emulateMedia({reducedMotion:'reduce'});
+  await openCalendar(page);
+  const cell=page.locator('#calendar-grid [data-date="2026-10-18"]');
+  for(let i=0;i<5;i++) {
+    await cell.click();
+    await expect(page.locator('#detail-close')).toBeFocused();
+    await page.locator('#detail-close').click();
+    await expect(page.locator('#detail-panel')).not.toHaveClass(/is-open/);
+    await expect(cell).toBeFocused();
+  }
+});
+
 test.describe('移动端日期交互',() => {
   test.use({viewport:{width:390,height:844},isMobile:true,hasTouch:true});
 

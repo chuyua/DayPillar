@@ -255,10 +255,11 @@ function openDetail(): void {
       $<HTMLButtonElement>('#detail-close').focus({preventScroll:true});
     }
   };
-  // 某些移动端 Chrome 在底部抽屉滑入过程中忽略焦点转移，
-  // 动画帧先试一次，完成滑入后再确认一次。
+  // 动画帧与短时延兼容滑入动画和减少动态效果模式。
+  // 不累积依赖 transitionend 的监听器；无动画时该事件可能永不触发。
   requestAnimationFrame(focusClose);
-  panel.addEventListener('transitionend',focusClose,{once:true});
+  window.setTimeout(focusClose,
+    window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 0 : 240);
 }
 
 function pickDate(value: string, options: {focusDay?: boolean; open?: boolean} = {}): void {
