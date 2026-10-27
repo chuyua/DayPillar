@@ -97,6 +97,18 @@ test('1900 / 2100 边界补齐日期不可选择，越界键盘不触发错误',
   await expect(page.locator('#error-toast')).toBeHidden();
 });
 
+test('跨中国午夜后标签页恢复与今日按钮使用最新日期',async ({page}) => {
+  await page.clock.install({time:new Date('2026-10-27T15:50:00.000Z')});
+  await page.goto('/DayPillar/?date=2026-10-27');
+  await expect(page.locator('#calendar-grid [data-date="2026-10-27"]')).toHaveClass(/is-today/);
+  await page.clock.fastForward(20*60*1000);
+  await page.evaluate(() => document.dispatchEvent(new Event('visibilitychange')));
+  await expect(page.locator('#calendar-grid [data-date="2026-10-28"]')).toHaveClass(/is-today/);
+  await expect(page.locator('#calendar-grid [data-date="2026-10-27"]')).not.toHaveClass(/is-today/);
+  await page.locator('#today-button').click();
+  await expect(page.locator('#calendar-grid [data-date="2026-10-28"]')).toHaveAttribute('aria-pressed','true');
+});
+
 test('深色配色与浏览器 theme-color 同步',async ({page}) => {
   await openCalendar(page);
   await page.emulateMedia({colorScheme:'dark'});

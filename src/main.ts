@@ -8,7 +8,7 @@ import {renderHexagram} from './data/hexagram.mjs';
 import {matchesDay} from './data/day-filter.mjs';
 import {boundedCacheGet} from './data/bounded-cache.mjs';
 
-const today = todayInChina();
+let today = todayInChina();
 const current = parseISO(new URLSearchParams(location.search).get('date') ?? '')
   ?? parseISO(today)
   ?? {year: 2026, month: 10, day: 27};
@@ -101,7 +101,18 @@ function dayCell(item: CalendarDay): string {
   </button>`;
 }
 
+// 页面常驻跨午夜后，今日标记必须跟随中国标准时间更新，而非锁定初次加载日。
+function refreshTodayMarker(): void {
+  const next = todayInChina();
+  if (next === today) return;
+  const previous = today;
+  today = next;
+  $('#calendar-grid').querySelector<HTMLButtonElement>(`[data-date="${previous}"]`)?.classList.remove('is-today');
+  $('#calendar-grid').querySelector<HTMLButtonElement>(`[data-date="${today}"]`)?.classList.add('is-today');
+}
+
 function renderCalendar(): void {
+  refreshTodayMarker();
   $('#month-label').innerHTML = monthLabel(view.year, view.month);
   $<HTMLSelectElement>('#year-jump').value = String(view.year);
   $<HTMLSelectElement>('#month-jump').value = String(view.month);
@@ -251,6 +262,7 @@ function openDetail(): void {
 }
 
 function pickDate(value: string, options: {focusDay?: boolean; open?: boolean} = {}): void {
+  refreshTodayMarker();
   const date = parseISO(value);
   if (!date) {showError('日期超出当前查询支持范围（1900—2100 年）');return;}
   const previous = selected;
@@ -377,6 +389,10 @@ function initEvents(): void {
   window.addEventListener('resize', () => {
     if (!isMobileDetail()) closeDetail(false);
   });
+  document.addEventListener('visibilitychange', () => {
+    if (!document.hidden) refreshTodayMarker();
+  });
+  window.addEventListener('focus', refreshTodayMarker);
   const jump = (): void => {
     const year = Number($<HTMLSelectElement>('#year-jump').value);
     const month = Number($<HTMLSelectElement>('#month-jump').value);
