@@ -5,6 +5,18 @@ import {SolarDay, LunarDay} from 'tyme4ts';
 import {lookupTraditionalStar} from '../src/data/stars.mjs';
 import {DAY_CYCLES, lookupDayGua} from '../src/data/gua-ying.mjs';
 
+test('tyme4ts 的每日宜忌 API 在首尾年份真实可用',() => {
+  for (const [year,month,day] of [[1900,1,1],[2024,2,10],[2026,10,27],[2100,12,31]]) {
+    const cycle=SolarDay.fromYmd(year,month,day).getSixtyCycleDay();
+    const recommends=cycle.getRecommends().map(x => x.getName());
+    const avoids=cycle.getAvoids().map(x => x.getName());
+    assert.ok(recommends.length > 0, `Missing 宜: ${year}-${month}-${day}`);
+    assert.ok(avoids.length > 0, `Missing 忌: ${year}-${month}-${day}`);
+    assert.ok(recommends.every(x => typeof x === 'string' && x.length > 0));
+    assert.ok(avoids.every(x => typeof x === 'string' && x.length > 0));
+  }
+});
+
 test('2024-02-10 公历转换为农历正月初一',() => {
   const date = SolarDay.fromYmd(2024,2,10);
   const lunar = date.getLunarDay();

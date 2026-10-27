@@ -1,6 +1,6 @@
 import './style.css';
 import {
-  addMonths, formatISO, getCalendarDay, getMonthCells, parseISO, todayInChina,
+  addMonths, formatISO, getCalendarDay, getDayTaboos, getMonthCells, parseISO, todayInChina,
   type CalendarDay
 } from './calendar';
 import {guaEntries, lookupDayGua} from './data/gua-ying.mjs';
@@ -167,6 +167,12 @@ function renderDetail(): void {
   catch (error) { showError(`详情计算失败：${String(error)}`); return; }
   const weekday = '日一二三四五六'[day.weekday];
   const dayGua = lookupDayGua(day.dayCycle);
+  let taboos: ReturnType<typeof getDayTaboos> | null = null;
+  try { taboos = getDayTaboos(day.year, day.month, day.day); }
+  catch (error) { showError(`宜忌资料读取失败：${String(error)}`); }
+  const renderTaboos = (names: string[]): string =>
+    names.length ? names.map(name => `<span class="taboo-tag">${escapeHtml(name)}</span>`).join('')
+      : '<span class="taboo-empty">无对应资料</span>';
   $('#date-detail').innerHTML = `
     <div class="detail-header"><span class="side-overline">DATE INSIGHTS <span>·</span> 日期详览</span>
       <div class="large-date"><span>${String(day.day).padStart(2, '0')}</span><span class="date-suffix">${day.month}月 · 周${weekday}</span></div>
@@ -189,6 +195,10 @@ function renderDetail(): void {
       <div class="section-title star-section"><span>传统二十七宿</span><small>LUNAR MONTH & DAY</small></div>
       <div class="star-block primary-star"><div class="star-symbol">廿七</div><div><small>传统农历月日算法 · 27 宿</small><strong>${escapeHtml(day.star27)}</strong><span>${day.monthSigned < 0 ? '闰月沿用对应月份资料' : '采用公开月日起宿循环算法'}</span></div></div>
       <p class="star-note">闰月沿用同名农历月份的二十七宿规则，属于当前项目假设。</p>
+      <div class="section-title star-section"><span>传统宜忌</span><small>TYME · DAILY REFERENCES</small></div>
+      <div class="taboo-groups"><div class="taboo-group"><h3>宜</h3><div class="taboo-items">${renderTaboos(taboos?.recommends ?? [])}</div></div>
+        <div class="taboo-group taboo-avoid"><h3>忌</h3><div class="taboo-items">${renderTaboos(taboos?.avoids ?? [])}</div></div></div>
+      <p class="star-note">此处宜忌来自 tyme4ts 传统历书规则，仅供文化资料查阅，不作为现实决策依据。</p>
     </div>`;
 }
 

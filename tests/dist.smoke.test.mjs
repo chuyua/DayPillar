@@ -27,6 +27,7 @@ test('GitHub Pages output has a project-relative base and intact hashed assets',
   assert.ok(js.includes('touchstart'), '手机上要能滑动换月');
   assert.ok(js.includes('ecliptic-dot'), '黄黑道必须保留文字并提供色点区别');
   assert.ok(js.includes('prefers-color-scheme'), '深色模式应跟随操作系统');
+  assert.ok(js.includes('taboo-groups'), '每日宜忌必须来自实际 tyme 接口');
   for (const removed of ['gua-catalog', 'catalog-content', 'gua-search', 'Tyme 值日体系', '星宿 · 双口径']) {
     assert.ok(!js.includes(removed), `不应继续显示被屏蔽的 Tyme 28 宿体系：${removed}`);
   }

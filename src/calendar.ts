@@ -89,6 +89,18 @@ export function getCalendarDay(year: number, month: number, day: number): Calend
   };
 }
 
+/** 只为当前选中日期生成文化宜忌，不在月历批量循环中计算。 */
+export function getDayTaboos(year: number, month: number, day: number): {
+  recommends: string[];
+  avoids: string[];
+} {
+  const cycle = SolarDay.fromYmd(year, month, day).getSixtyCycleDay();
+  return {
+    recommends: cycle.getRecommends().map(taboo => taboo.getName()),
+    avoids: cycle.getAvoids().map(taboo => taboo.getName())
+  };
+}
+
 export function getMonthCells(year: number, month: number): CalendarDay[] {
   const firstWeek = new Date(Date.UTC(year, month - 1, 1)).getUTCDay();
   // 只生成本月可见的 5/6 周，避免重复初始化非必要的大量历法对象。

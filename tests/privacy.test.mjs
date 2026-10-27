@@ -12,6 +12,14 @@ test('锁文件不得固定使用不可达的镜像域名', () => {
   assert.ok(lock.includes('registry.npmjs.org'));
 });
 
+test('npm 元数据统一使用 DayPillar 名称', () => {
+  const manifest=JSON.parse(readFileSync('package.json','utf8'));
+  const lock=JSON.parse(readFileSync('package-lock.json','utf8'));
+  assert.equal(manifest.name,'daypillar');
+  assert.equal(lock.name,manifest.name);
+  assert.equal(lock.packages[''].name,manifest.name);
+});
+
 test('公开仓库不追踪机构内部原件、完整表格或转存包', () => {
   const listed = spawnSync('git', ['ls-files', '--cached', '-z'], {encoding: 'utf8'});
   assert.equal(listed.status, 0, listed.stderr);

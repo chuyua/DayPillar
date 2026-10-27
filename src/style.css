@@ -141,3 +141,23 @@ select:focus-visible{outline:3px solid #95bdb2;outline-offset:3px}
   .drawer-handle:before{background:#98bba4}
   .toast{background:#dfeee2;color:#163225}
 }
+
+/* 传统宜忌只出现在日期详情，避免日历 42 格重复渲染。 */
+.taboo-groups{display:grid;grid-template-columns:minmax(0,1fr);gap:12px}
+.taboo-group{padding:12px;border:1px solid #c9ddcb;border-radius:9px;background:#f0f8ef}
+.taboo-group h3{font-size:15px;color:#245e3a;margin:0 0 10px}
+.taboo-items{display:flex;flex-wrap:wrap;gap:5px}
+.taboo-tag{display:inline-flex;align-items:center;padding:4px 7px;border-radius:5px;background:#fff;border:1px solid #b8d4b9;color:#31553b;font-size:11px;line-height:1.4}
+.taboo-avoid{background:#fff5ef;border-color:#e2c4b4}
+.taboo-avoid h3{color:#865134}
+.taboo-avoid .taboo-tag{border-color:#dec8bc;color:#704d38}
+.taboo-empty{font-size:11px;color:#5b6c5d}
+@media(prefers-color-scheme:dark){
+  .taboo-group{background:#203c2b;border-color:#5c8161}
+  .taboo-group h3{color:#c8ebcc}
+  .taboo-tag{background:#2b4631;color:#ecf7e9;border-color:#63856a}
+  .taboo-avoid{background:#463328;border-color:#916c50}
+  .taboo-avoid h3{color:#f8d4b7}
+  .taboo-avoid .taboo-tag{background:#533c2f;color:#fae3d0;border-color:#967152}
+  .taboo-empty{color:#bbc8b7}
+}
