@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 600 192" role="img" aria-labelledby="title desc">
+  <title id="title">DayPillar · 时序横向品牌组合</title>
+  <desc id="desc">左侧为时序图形标志，右侧为原创几何线条绘制的 DAYPILLAR 字标。</desc>
+  <g transform="scale(.75)"><rect width="256" height="256" rx="56" fill="#174b42"/>
+  <g fill="#fffcf2"><path fill-rule="evenodd" d="M56 48h64a80 80 0 0 1 0 160H56V48Zm24 24v112h40a56 56 0 0 0 0-112H80Z"/>
+  <path d="M108 128h24v68h-24z"/></g>
+  <g fill="#dba97e"><circle cx="120" cy="100" r="16"/></g></g>
+  <g fill="none" stroke="#174b42" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"><path transform="translate(228 74)" d="M0 0h12c26 0 26 44 0 44H0Z"/>
+    <path transform="translate(272 74)" d="M0 44 16 0 32 44M6 28h20"/>
+    <path transform="translate(316 74)" d="M0 0 16 22 32 0M16 22v22"/>
+    <path transform="translate(360 74)" d="M0 44V0h16c22 0 22 24 0 24H0"/>
+    <path transform="translate(404 74)" d="M0 0v44"/>
+    <path transform="translate(421 74)" d="M0 0v44h27"/>
+    <path transform="translate(460 74)" d="M0 0v44h27"/>
+    <path transform="translate(499 74)" d="M0 44 16 0 32 44M6 28h20"/>
+    <path transform="translate(543 74)" d="M0 44V0h16c22 0 22 24 0 24H0m16 0 19 20"/>
+    </g>
+</svg>
