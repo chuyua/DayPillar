@@ -9,12 +9,14 @@
     "preview": "vite preview --host 0.0.0.0",
     "typecheck": "tsc --noEmit",
     "test": "node --test tests/datasets.test.mjs tests/privacy.test.mjs",
-    "test:integration": "node --test tests/tyme.integration.test.mjs"
+    "test:integration": "node --test tests/tyme.integration.test.mjs",
+    "test:e2e": "playwright test"
   },
   "dependencies": {
     "tyme4ts": "1.5.4"
   },
   "devDependencies": {
+    "@playwright/test": "1.64.1",
     "typescript": "~5.7.3",
     "vite": "^6.3.6"
   }
