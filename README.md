@@ -23,9 +23,9 @@
 6. `node --test tests/dist.smoke.test.mjs`（Pages 资源路径冒烟检查）
 7. 上传 `dist/` 并用 GitHub Actions 发布 Pages
 
-本仓库目前为 Private；当前 GitHub 账户方案不支持为 Private 仓库开启 GitHub Pages。CI 仍执行全部测试并上传 `daypillar-static-site` 静态网站构建产物（保留 14 天），**不会虚报 Pages 已上线**。若以后仓库改为符合 Pages 资格的可见性，`main` 分支才启用 Pages 自动部署。PR 仅运行校验，不执行部署。
+本仓库已设为 Public，并已启用 GitHub Pages 的 **GitHub Actions** 部署方式。每次推送 `main` 都自动执行完整测试、打包及 Pages 发布；PR 仅验证，不部署。同时上传 `daypillar-static-site` 静态构建产物（保留 14 天）。
 
-只有 Pages 真正启用后，预期地址才是：`https://chuyua.github.io/DayPillar/`。
+**线上地址：** https://chuyua.github.io/DayPillar/ （2026-10-27 首次发布成功，并已核对主页及 JS/CSS 返回 HTTP 200）。
 
 ## 功能
 
