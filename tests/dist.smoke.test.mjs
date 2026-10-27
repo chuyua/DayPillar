@@ -18,6 +18,9 @@ test('GitHub Pages output has a project-relative base and intact hashed assets',
   assert.ok(js.includes('天罡'), '甲子日的对应名称必须编入首页');
   assert.ok(js.includes('day-gua'), '每个日历格必须显示对应卦名与名称');
   assert.ok(js.includes('gua-highlight'), '右侧日期详情必须显示日干支对应卦象');
+  assert.ok(js.includes('mode-button'), '必须保留简洁/详细视图切换');
+  assert.ok(js.includes('detail-backdrop'), '移动端必须提供可关闭的日期详情面板');
+  assert.ok(js.includes('ArrowLeft'), '必须支持方向键调整选中日期');
   for (const removed of ['gua-catalog', 'catalog-content', 'gua-search', 'Tyme 值日体系', '星宿 · 双口径']) {
     assert.ok(!js.includes(removed), `不应继续显示被屏蔽的 Tyme 28 宿体系：${removed}`);
   }
@@ -33,5 +36,10 @@ test('GitHub Pages output has a project-relative base and intact hashed assets',
   assert.ok(!uiSource.includes('gua-search'));
   assert.match(uiSource, /day-gua-name/);
   assert.match(uiSource, /day-ying/);
+  assert.match(uiSource, /if \(changedMonth\) renderCalendar\(\)/);
+  assert.match(uiSource, /updateSelectedDay\(previous\)/);
+  assert.match(uiSource, /monthCells\.find\(/);
+  assert.doesNotMatch(uiSource, /role="row"/);
+  assert.doesNotMatch(html, /二十八宿轮值/);
   assert.doesNotMatch(html, /\/src\/main\.ts/);
 });

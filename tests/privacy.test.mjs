@@ -6,6 +6,12 @@ import {join} from 'node:path';
 
 const forbidden = /(?:^|\/)(?:reference\/|.*\.xlsx$|.*\.xls$|scripts-generate\.py$|xlsx-stars\.json$|daypillar-transfer|\.daypillar\.b64$|DATA_AUDIT\.md$)/i;
 
+test('锁文件不得固定使用不可达的镜像域名', () => {
+  const lock = readFileSync('package-lock.json','utf8');
+  assert.ok(!lock.includes('registry.npmmirror.com'));
+  assert.ok(lock.includes('registry.npmjs.org'));
+});
+
 test('公开仓库不追踪机构内部原件、完整表格或转存包', () => {
   const listed = spawnSync('git', ['ls-files', '--cached', '-z'], {encoding: 'utf8'});
   assert.equal(listed.status, 0, listed.stderr);
