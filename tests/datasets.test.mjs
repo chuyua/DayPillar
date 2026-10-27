@@ -2,6 +2,8 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {lookupTraditionalStar, TRADITIONAL_STARS, MONTH_STARTS} from '../src/data/stars.mjs';
 import {GUA_YING, DAY_CYCLES, guaEntries, lookupDayGua} from '../src/data/gua-ying.mjs';
+import {getHexagramLines, renderHexagram} from '../src/data/hexagram.mjs';
+import {matchesDay} from '../src/data/day-filter.mjs';
 
 test('公开二十七宿规则：27 唯一宿名、12 个月首宿', () => {
   assert.equal(TRADITIONAL_STARS.length, 27);
@@ -60,4 +62,35 @@ test('日干支与 60 组卦象逐项对应，甲子日必须是天风姤／天�
   }
   assert.equal(lookupDayGua('不存在'), null);
   assert.equal(lookupDayGua('甲子日'), null);
+});
+
+test('六爻 SVG 按八卦上下三爻正确绘制，不修改原始卦名', () => {
+  assert.deepEqual(getHexagramLines('天风姤'), [true,true,true,true,true,false]);
+  assert.deepEqual(getHexagramLines('泽风大过'), [false,true,true,true,true,false]);
+  assert.deepEqual(getHexagramLines('坎为水'), [false,true,false,false,true,false]);
+  assert.deepEqual(getHexagramLines('巽为风'), [true,true,false,true,true,false]);
+  assert.deepEqual(getHexagramLines('离为火'), [true,false,true,true,false,true]);
+  assert.equal(getHexagramLines('无名之卦'), null);
+  assert.equal(renderHexagram('无名之卦'), '');
+  for (const entry of guaEntries()) {
+    const lines = getHexagramLines(entry.gua);
+    assert.equal(lines?.length, 6, `Cannot draw ${entry.gua}`);
+    const svg = renderHexagram(entry.gua);
+    assert.match(svg, /<svg class="hexagram-figure"/);
+    assert.match(svg, /aria-label="六爻卦象图"/);
+    assert.equal((svg.match(/\sy="/g) ?? []).length >= 6, true);
+  }
+});
+
+test('查询只高亮匹配当月日期：支持干支、二十七宿、卦名、对应名称', () => {
+  const sample = {
+    iso:'2026-10-27',dayCycle:'甲子',duty:'建',star27:'角宿',
+    lunarName:'初一',lunarMonthName:'九月',term:null,festival:null
+  };
+  for (const query of ['甲子','角宿','天风姤','天罡','2026-10',' 建 ','']) {
+    assert.equal(matchesDay(sample,query),true,`Expected query ${query}`);
+  }
+  for (const query of ['乙丑','室宿','朱厌','腊月']) {
+    assert.equal(matchesDay(sample,query),false,`Unexpected query ${query}`);
+  }
 });

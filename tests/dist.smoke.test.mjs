@@ -21,6 +21,11 @@ test('GitHub Pages output has a project-relative base and intact hashed assets',
   assert.ok(js.includes('mode-button'), '必须保留简洁/详细视图切换');
   assert.ok(js.includes('detail-backdrop'), '移动端必须提供可关闭的日期详情面板');
   assert.ok(js.includes('ArrowLeft'), '必须支持方向键调整选中日期');
+  assert.ok(js.includes('year-jump'), '跳转年份不能依赖兼容性不足的 type=month');
+  assert.ok(js.includes('day-filter'), '必须能够在月历内搜索并高亮日期');
+  assert.ok(js.includes('hexagram-figure'), '右侧详情必须显示六爻 SVG');
+  assert.ok(js.includes('touchstart'), '手机上要能滑动换月');
+  assert.ok(js.includes('ecliptic-dot'), '黄黑道必须保留文字并提供色点区别');
   for (const removed of ['gua-catalog', 'catalog-content', 'gua-search', 'Tyme 值日体系', '星宿 · 双口径']) {
     assert.ok(!js.includes(removed), `不应继续显示被屏蔽的 Tyme 28 宿体系：${removed}`);
   }
@@ -34,6 +39,7 @@ test('GitHub Pages output has a project-relative base and intact hashed assets',
   assert.ok(!uiSource.includes('catalog-view'));
   assert.ok(!uiSource.includes('renderCatalog'));
   assert.ok(!uiSource.includes('gua-search'));
+  assert.ok(!uiSource.includes('type="month"'));
   assert.match(uiSource, /day-gua-name/);
   assert.match(uiSource, /day-ying/);
   const cssSource = readFileSync('src/style.css','utf8');
