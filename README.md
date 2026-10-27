@@ -39,4 +39,6 @@
 
 日期详情新增来自 `tyme4ts@1.5.4` 的 `SixtyCycleDay.getRecommends()/getAvoids()` 传统宜忌资料，仅在选中日期时读取，不参与整月计算，供文化资料查阅。npm 包名统一为 `daypillar`，网站保留中文品牌“时序”。
 
+CI 新增 Playwright 真实浏览器回归，涵盖日期按钮焦点、键盘、移动抽屉、日期边界、搜索、深色模式以及卦象与宜忌；复用 GitHub Ubuntu 24.04 预装的 Google Chrome，避免重复下载 Chromium 与安装 apt 依赖。GitHub Actions 也更新到 Node 24 兼容的稳定主版本。
+
 本仓库为独立升级实现，**尚不等同于旧站全量功能迁移**。没有旧站原始 HTML 与 JS 源码时，无法承诺旧版个人化运算已逐项完成迁移。

@@ -10,6 +10,8 @@ export default defineConfig({
   use: {
     baseURL: 'http://127.0.0.1:4173',
     browserName: 'chromium',
+    // GitHub Ubuntu 24.04 Runner 预装 Google Chrome，避免重复下载。
+    channel: 'chrome',
     viewport: {width: 1366, height: 900},
     trace: 'retain-on-failure',
     screenshot: 'only-on-failure'

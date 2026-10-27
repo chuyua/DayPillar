@@ -19,8 +19,8 @@ jobs:
   build:
     runs-on: ubuntu-24.04
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
         with:
           node-version: '22'
           cache: npm
@@ -33,9 +33,10 @@ jobs:
           BASE_PATH: /DayPillar/
       - run: node --test tests/dist.smoke.test.mjs
       # 真实浏览器回归：键盘焦点、移动抽屉、筛选、日期边界、深色模式。
-      - run: npx playwright install --with-deps chromium
+      # 官方 Ubuntu 24.04 Runner 已自带 Chrome，不额外下载浏览器及 apt 依赖。
+      - run: google-chrome --version
       - run: npm run test:e2e
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v5
         if: failure()
         with:
           name: daypillar-browser-test-failures
@@ -43,15 +44,15 @@ jobs:
           if-no-files-found: ignore
           retention-days: 7
       # Private repos on plans without private Pages still retain a verified build.
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v5
         with:
           name: daypillar-static-site
           path: dist/
           if-no-files-found: error
           retention-days: 14
-      - uses: actions/configure-pages@v5
+      - uses: actions/configure-pages@v6
         if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request' && !github.event.repository.private
-      - uses: actions/upload-pages-artifact@v3
+      - uses: actions/upload-pages-artifact@v4
         if: github.event_name != 'pull_request' && !github.event.repository.private
         with:
           path: dist
@@ -65,4 +66,4 @@ jobs:
       url: ${{ steps.deployment.outputs.page_url }}
     steps:
       - id: deployment
-        uses: actions/deploy-pages@v4
+        uses: actions/deploy-pages@v5
