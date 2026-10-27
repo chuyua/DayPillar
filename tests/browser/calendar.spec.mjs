@@ -80,12 +80,34 @@ test.describe('移动端日期交互',() => {
     await expect(page.locator('#detail-panel')).not.toHaveClass(/is-open/);
     await expect(button).toBeFocused();
 
+    await button.click();
+    await expect(page.locator('#detail-panel')).toHaveClass(/is-open/);
+    await page.locator('#drawer-handle').evaluate(handle => {
+      const touch=y => new Touch({identifier:2,target:handle,clientX:190,clientY:y});
+      handle.dispatchEvent(new TouchEvent('touchstart',{bubbles:true,touches:[touch(300)],changedTouches:[touch(300)]}));
+      handle.dispatchEvent(new TouchEvent('touchend',{bubbles:true,cancelable:true,touches:[],changedTouches:[touch(395)]}));
+    });
+    await expect(page.locator('#detail-panel')).not.toHaveClass(/is-open/);
+    await expect(button).toBeFocused();
+
     await page.locator('#calendar-grid').evaluate(grid => {
       const touch=(x,y) => new Touch({identifier:1,target:grid,clientX:x,clientY:y});
       grid.dispatchEvent(new TouchEvent('touchstart',{bubbles:true,touches:[touch(350,400)],changedTouches:[touch(350,400)]}));
       grid.dispatchEvent(new TouchEvent('touchend',{bubbles:true,cancelable:true,touches:[],changedTouches:[touch(80,403)]}));
     });
     await expect(page.locator('#month-label')).toContainText('11 月');
+    await page.locator('#calendar-grid').evaluate(grid => {
+      const touch=(x,y) => new Touch({identifier:3,target:grid,clientX:x,clientY:y});
+      grid.dispatchEvent(new TouchEvent('touchstart',{bubbles:true,touches:[touch(150,350)],changedTouches:[touch(150,350)]}));
+      grid.dispatchEvent(new TouchEvent('touchend',{bubbles:true,cancelable:true,touches:[],changedTouches:[touch(160,530)]}));
+    });
+    await expect(page.locator('#month-label')).toContainText('11 月');
+    await page.locator('#calendar-grid').evaluate(grid => {
+      const touch=(x,y) => new Touch({identifier:4,target:grid,clientX:x,clientY:y});
+      grid.dispatchEvent(new TouchEvent('touchstart',{bubbles:true,touches:[touch(50,400)],changedTouches:[touch(50,400)]}));
+      grid.dispatchEvent(new TouchEvent('touchend',{bubbles:true,cancelable:true,touches:[],changedTouches:[touch(330,401)]}));
+    });
+    await expect(page.locator('#month-label')).toContainText('10 月');
     await expect(page.locator('#error-toast')).toBeHidden();
   });
 });
