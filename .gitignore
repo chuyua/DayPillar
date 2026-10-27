@@ -1,0 +1,18 @@
+node_modules/
+dist/
+*.log
+.env
+.env.*
+!.env.example
+
+# Institutional internal source materials: never commit or publish.
+reference/
+*.xlsx
+*.xls
+scripts-generate.py
+src/data/xlsx-stars.json
+DATA_AUDIT.md
+.daypillar.b64
+daypillar-transfer*
+*.tar
+*.b64.txt
