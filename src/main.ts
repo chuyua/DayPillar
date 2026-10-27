@@ -367,6 +367,14 @@ function initEvents(): void {
 shell();
 initEvents();
 renderCalendar();
+// 跟随操作系统深色模式，并同步浏览器顶栏颜色；无额外持久化配置。
+const darkScheme = window.matchMedia('(prefers-color-scheme: dark)');
+const syncThemeColor = (): void => {
+  document.querySelector<HTMLMetaElement>('meta[name="theme-color"]')
+    ?.setAttribute('content', darkScheme.matches ? '#152624' : '#f7f7f2');
+};
+darkScheme.addEventListener('change',syncThemeColor);
+syncThemeColor();
 // 可被自动化截图测试和诊断脚本只读获取，非业务接口。
 Object.defineProperty(window,'__TYME_AUDIT__', {
   value: Object.freeze({starScheme:'traditional-27',guayings:guaEntries().length}),

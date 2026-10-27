@@ -26,6 +26,7 @@ test('GitHub Pages output has a project-relative base and intact hashed assets',
   assert.ok(js.includes('hexagram-figure'), '右侧详情必须显示六爻 SVG');
   assert.ok(js.includes('touchstart'), '手机上要能滑动换月');
   assert.ok(js.includes('ecliptic-dot'), '黄黑道必须保留文字并提供色点区别');
+  assert.ok(js.includes('prefers-color-scheme'), '深色模式应跟随操作系统');
   for (const removed of ['gua-catalog', 'catalog-content', 'gua-search', 'Tyme 值日体系', '星宿 · 双口径']) {
     assert.ok(!js.includes(removed), `不应继续显示被屏蔽的 Tyme 28 宿体系：${removed}`);
   }
@@ -43,6 +44,7 @@ test('GitHub Pages output has a project-relative base and intact hashed assets',
   assert.match(uiSource, /day-gua-name/);
   assert.match(uiSource, /day-ying/);
   const cssSource = readFileSync('src/style.css','utf8');
+  assert.ok(cssSource.includes('@media(prefers-color-scheme:dark)'), '必须提供深色配色');
   for (const selector of ['.intro{', '.tabs{', '.tab{', '.catalog-grid{']) {
     assert.ok(!cssSource.includes(selector), `Unused selector must be removed: ${selector}`);
   }
