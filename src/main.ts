@@ -83,11 +83,12 @@ function monthLabel(year: number, month: number): string {
 
 function dayCell(item: CalendarDay): string {
   const isMonth = item.year === view.year && item.month === view.month;
-  const cls = ['day', !isMonth ? 'day-other' : '', item.iso === today ? 'is-today' : '', item.iso === selected ? 'is-selected' : ''].filter(Boolean).join(' ');
+  const supported = item.year >= 1900 && item.year <= 2100;
+  const cls = ['day', !isMonth ? 'day-other' : '', !supported ? 'day-unavailable' : '', item.iso === today ? 'is-today' : '', item.iso === selected ? 'is-selected' : ''].filter(Boolean).join(' ');
   const minor = item.lunarDay === 1 ? item.lunarMonthName : item.lunarName;
   const gua = lookupDayGua(item.dayCycle);
   const label = `${item.iso}，农历${item.lunarMonthName}${item.lunarName}，${item.dayCycle}日，${gua?.gua ?? ''}，${gua?.ying ?? ''}，传统星宿${item.star27}`;
-  return `<button type="button" class="${cls}" data-date="${item.iso}" tabindex="${item.iso === selected ? 0 : -1}" aria-label="${escapeHtml(label)}" aria-pressed="${item.iso === selected}">
+  return `<button type="button" class="${cls}" data-date="${item.iso}" tabindex="${item.iso === selected ? 0 : -1}" ${supported ? '' : 'disabled'} aria-label="${escapeHtml(label)}" aria-pressed="${item.iso === selected}">
     <span class="day-top"><b>${item.day}</b><span class="day-lunar">${escapeHtml(minor)}</span></span>
     <span class="day-cycle">${escapeHtml(item.dayCycle)}日 <span class="duty-text"><span class="tiny-dot">·</span> ${escapeHtml(item.duty)}日</span></span>
     <span class="day-star">${escapeHtml(item.star27)}</span>
@@ -315,6 +316,9 @@ function initEvents(): void {
     if (next !== null) {
       event.preventDefault();
       if (parseISO(next)) pickDate(next,{focusDay:true});
+    } else if (event.key === 'PageUp' || event.key === 'PageDown') {
+      // 在 1900/2100 年边界不让浏览器误把 PageUp/Down 当页面滚动。
+      event.preventDefault();
     }
   });
   // 仅在移动端对月历做水平手势；纵向滚动与普通单击保持原有行为。

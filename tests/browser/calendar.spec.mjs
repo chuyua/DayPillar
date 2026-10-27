@@ -55,6 +55,34 @@ test('跳转年份边界、不刷新即可切换月份',async ({page}) => {
   await expect(page.locator('#error-toast')).toBeHidden();
 });
 
+test('1900 / 2100 边界补齐日期不可选择，越界键盘不触发错误',async ({page}) => {
+  await page.goto('/DayPillar/?date=1900-01-01');
+  const first=page.locator('#calendar-grid [data-date="1900-01-01"]');
+  await expect(first).toHaveAttribute('aria-pressed','true');
+  const older=page.locator('#calendar-grid [data-date^="1899-"]');
+  expect(await older.count()).toBeGreaterThan(0);
+  for (const cell of await older.all()) await expect(cell).toBeDisabled();
+  await first.focus();
+  await page.keyboard.press('ArrowLeft');
+  await expect(first).toBeFocused();
+  await page.keyboard.press('PageUp');
+  await expect(first).toHaveAttribute('aria-pressed','true');
+  await expect(page.locator('#error-toast')).toBeHidden();
+
+  await page.goto('/DayPillar/?date=2100-12-31');
+  const last=page.locator('#calendar-grid [data-date="2100-12-31"]');
+  await expect(last).toHaveAttribute('aria-pressed','true');
+  const newer=page.locator('#calendar-grid [data-date^="2101-"]');
+  expect(await newer.count()).toBeGreaterThan(0);
+  for (const cell of await newer.all()) await expect(cell).toBeDisabled();
+  await last.focus();
+  await page.keyboard.press('ArrowRight');
+  await expect(last).toBeFocused();
+  await page.keyboard.press('PageDown');
+  await expect(last).toHaveAttribute('aria-pressed','true');
+  await expect(page.locator('#error-toast')).toBeHidden();
+});
+
 test('深色配色与浏览器 theme-color 同步',async ({page}) => {
   await openCalendar(page);
   await page.emulateMedia({colorScheme:'dark'});
