@@ -18,10 +18,6 @@ export interface CalendarDay {
   dayCycle: string;
   duty: string;
   star27: string;
-  star28: string;
-  star28Luck: string;
-  star28Animal: string;
-  star28Beast: string;
   twelveStar: string;
   ecliptic: string;
   term: string | null;
@@ -66,7 +62,6 @@ export function getCalendarDay(year: number, month: number, day: number): Calend
   const lunar = solar.getLunarDay();
   const lunarMonth = lunar.getLunarMonth();
   const cycleDay = solar.getSixtyCycleDay();
-  const star28 = lunar.getTwentyEightStar();
   const twelveStar = cycleDay.getTwelveStar();
   const termDay = solar.getTermDay();
   const monthSigned = lunarMonth.getMonthValue();
@@ -86,10 +81,6 @@ export function getCalendarDay(year: number, month: number, day: number): Calend
     dayCycle: cycleDay.getSixtyCycle().getName(),
     duty: cycleDay.getDuty().getName(),
     star27: lookupTraditionalStar(monthSigned, lunar.getDay()),
-    star28: star28.getName() + '宿',
-    star28Luck: star28.getLuck().getName(),
-    star28Animal: star28.getAnimal().getName(),
-    star28Beast: star28.getZone().getBeast().getName(),
     twelveStar: twelveStar.getName(),
     ecliptic: twelveStar.getEcliptic().getName(),
     term: termDay.getDayIndex() === 0 ? termDay.getSolarTerm().getName() : null,

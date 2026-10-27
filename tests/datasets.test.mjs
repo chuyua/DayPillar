@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {lookupTraditionalStar, TRADITIONAL_STARS, MONTH_STARTS} from '../src/data/stars.mjs';
-import {GUA_YING, guaEntries} from '../src/data/gua-ying.mjs';
+import {GUA_YING, DAY_CYCLES, guaEntries, lookupDayGua} from '../src/data/gua-ying.mjs';
 
 test('公开二十七宿规则：27 唯一宿名、12 个月首宿', () => {
   assert.equal(TRADITIONAL_STARS.length, 27);
@@ -40,4 +40,24 @@ test('用户确认的 60 组 GUA_YING 按原字面和顺序保留', () => {
   assert.equal(entries[59].raw, '泽天夬/n空');
   assert.ok(entries.every(e => e.gua && e.ying && e.raw === `${e.gua}/n${e.ying}`));
   assert.equal(new Set(entries.map(e => e.gua)).size, 60);
+});
+
+test('日干支与 60 组卦象逐项对应，甲子日必须是天风姤／天罡', () => {
+  const entries = guaEntries();
+  assert.equal(DAY_CYCLES.length, 60);
+  assert.equal(new Set(DAY_CYCLES).size, 60);
+  assert.equal(DAY_CYCLES[0], '甲子');
+  assert.equal(DAY_CYCLES[1], '乙丑');
+  assert.equal(DAY_CYCLES[59], '癸亥');
+  assert.deepEqual(lookupDayGua('甲子'), entries[0]);
+  assert.equal(lookupDayGua('甲子').gua, '天风姤');
+  assert.equal(lookupDayGua('甲子').ying, '天罡');
+  assert.equal(lookupDayGua('乙丑').ying, '朱厌');
+  assert.equal(lookupDayGua('癸亥').ying, '空');
+  for (let i = 0; i < entries.length; i++) {
+    assert.equal(entries[i].dayCycle, DAY_CYCLES[i]);
+    assert.equal(lookupDayGua(DAY_CYCLES[i]), entries[i]);
+  }
+  assert.equal(lookupDayGua('不存在'), null);
+  assert.equal(lookupDayGua('甲子日'), null);
 });

@@ -1,6 +1,7 @@
 /**
  * 用户确认的原始关系：保持顺序、名称和 /n 分隔符。
- * 这 60 条不是「完整 64 卦」，不能凭空补 4 个缺项，更不能推断日期→卦的规则。
+ * 这 60 条不是「完整 64 卦」，不能凭空补 4 个缺项。
+ * 用户确认按六十甲子顺序对应：甲子日即第 1 条（天风姤 / 天罡）。
  */
 export const GUA_YING = Object.freeze([
   "天风姤/n天罡", "泽风大过/n朱厌", "火风鼎/n困敦", "雷风恒/n九天", "巽为风/n阏逢",
@@ -17,9 +18,21 @@ export const GUA_YING = Object.freeze([
   "水天需/n大渊献", "风天小畜/n天英", "雷天大壮/n元黓", "火天大有/n飞廉", "泽天夬/n空"
 ]);
 
-export function guaEntries() {
-  return GUA_YING.map((raw, index) => {
+const STEMS = Object.freeze(['甲','乙','丙','丁','戊','己','庚','辛','壬','癸']);
+const BRANCHES = Object.freeze(['子','丑','寅','卯','辰','巳','午','未','申','酉','戌','亥']);
+export const DAY_CYCLES = Object.freeze(
+  Array.from({length: 60}, (_, index) => STEMS[index % 10] + BRANCHES[index % 12])
+);
+const ENTRIES = Object.freeze(GUA_YING.map((raw, index) => {
     const [gua, ying] = raw.split('/n');
-    return { index: index + 1, gua, ying, raw };
-  });
+    return Object.freeze({ index: index + 1, dayCycle: DAY_CYCLES[index], gua, ying, raw });
+  }));
+const BY_DAY_CYCLE = new Map(ENTRIES.map(entry => [entry.dayCycle, entry]));
+
+export function guaEntries() {
+  return ENTRIES;
+}
+
+export function lookupDayGua(dayCycle) {
+  return BY_DAY_CYCLE.get(dayCycle) ?? null;
 }

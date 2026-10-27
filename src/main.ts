@@ -3,17 +3,14 @@ import {
   addMonths, formatISO, getCalendarDay, getMonthCells, parseISO, todayInChina,
   type CalendarDay
 } from './calendar';
-import {guaEntries} from './data/gua-ying.mjs';
+import {guaEntries, lookupDayGua} from './data/gua-ying.mjs';
 
-
-type Tab = 'calendar' | 'catalog';
 const today = todayInChina();
 const current = parseISO(new URLSearchParams(location.search).get('date') ?? '')
   ?? parseISO(today)
   ?? {year: 2026, month: 10, day: 27};
 let selected = formatISO(current.year, current.month, current.day);
 let view = {year: current.year, month: current.month};
-let tab: Tab = 'calendar';
 let keyword = '';
 
 const $ = <T extends Element = HTMLElement>(selector: string): T => {
@@ -32,8 +29,8 @@ function shell(): void {
         <span><strong>时序</strong><small>传统历法 · 数字新生</small></span>
       </a>
       <nav class="tabs" aria-label="页面导航">
-        <button type="button" class="tab active" data-tab="calendar">历法月览</button>
-        <button type="button" class="tab" data-tab="catalog">卦象映射</button>
+        <a class="tab active" href="#calendar-view">历法月览</a>
+        <a class="tab" href="#gua-catalog">卦象映射</a>
       </nav>
       <span class="header-source">历法引擎 <strong>tyme4ts</strong></span>
     </header>
@@ -41,7 +38,7 @@ function shell(): void {
       <div class="intro">
         <div><span class="eyebrow"><span class="accent-line"></span> 传统历法 · 精准查阅</span>
           <h1>在日月流转之间，<em>读懂时序。</em></h1>
-          <p>公农历与干支由 Tyme 计算；传统 27 宿规则与 28 宿值日明确分列。</p>
+          <p>公农历与干支由 Tyme 计算；农历 27 宿与六十甲子卦象直接呈现。</p>
         </div>
         <div class="intro-emblem" aria-hidden="true"><span>节</span><span>气</span></div>
       </div>
@@ -67,13 +64,13 @@ function shell(): void {
           <div id="date-detail"></div>
         </aside>
       </section>
-      <section id="catalog-view" class="catalog-view" hidden>
-        <div class="catalog-heading"><div><span class="eyebrow">USER-PROVIDED REFERENCE</span><h2>卦象与对应名称</h2>
-          <p>完全保留原始 60 组关系；只做查询展示，不自动建立日期到卦象的未验证映射。</p></div>
-          <input id="gua-search" type="search" placeholder="搜索卦名或名称…" aria-label="搜索卦象" /></div>
+      <section id="gua-catalog" class="catalog-view" aria-label="六十甲子卦象映射">
+        <div class="catalog-heading"><div><span class="eyebrow">SIXTY-DAY CYCLE</span><h2>六十甲子 · 卦象映射</h2>
+          <p>按日干支与原始 60 组关系顺序对应。甲子日为天风姤 · 天罡；六十日循环。</p></div>
+          <input id="gua-search" type="search" placeholder="搜索干支、卦名或对应名称…" aria-label="搜索干支卦象" /></div>
         <div id="catalog-content" class="catalog-grid"></div>
       </section>
-      <footer class="site-footer"><span>时序 / TIME &amp; TRADITION</span><span>历法 · tyme4ts 1.5.4　|　27 宿 · 传统公开规则　|　卦象 · 原始映射</span></footer>
+      <footer class="site-footer"><span>时序 / TIME &amp; TRADITION</span><span>历法 · tyme4ts 1.5.4　|　27 宿 · 传统公开规则　|　六十甲子 · 卦象映射</span></footer>
     </main>
     <div class="toast" id="error-toast" role="alert" hidden></div>`;
 }
@@ -92,11 +89,12 @@ function dayCell(item: CalendarDay): string {
   const isMonth = item.year === view.year && item.month === view.month;
   const cls = ['day', !isMonth ? 'day-other' : '', item.iso === today ? 'is-today' : '', item.iso === selected ? 'is-selected' : ''].filter(Boolean).join(' ');
   const minor = item.lunarDay === 1 ? item.lunarMonthName : item.lunarName;
-  const label = `${item.iso}，农历${item.lunarMonthName}${item.lunarName}，${item.dayCycle}日，传统星宿${item.star27}`;
+  const gua = lookupDayGua(item.dayCycle);
+  const label = `${item.iso}，农历${item.lunarMonthName}${item.lunarName}，${item.dayCycle}日，${gua?.gua ?? ''}，${gua?.ying ?? ''}，传统星宿${item.star27}`;
   return `<button type="button" class="${cls}" data-date="${item.iso}" aria-label="${escapeHtml(label)}" aria-pressed="${item.iso === selected}">
     <span class="day-top"><b>${item.day}</b><span class="day-lunar">${escapeHtml(minor)}</span></span>
     <span class="day-cycle">${escapeHtml(item.dayCycle)}日 <span class="tiny-dot">·</span> ${escapeHtml(item.duty)}日</span>
-    <span class="day-star">${escapeHtml(item.star27)}</span>
+    <span class="day-star">${escapeHtml(item.star27)} <span class="day-ying">· ${escapeHtml(gua?.ying ?? '—')}</span></span>
     ${item.term ? `<span class="day-term">${escapeHtml(item.term)}</span>` : item.festival ? `<span class="day-festival">${escapeHtml(item.festival)}</span>` : ''}
   </button>`;
 }
@@ -124,6 +122,7 @@ function renderDetail(): void {
   try { day = getCalendarDay(item.year, item.month, item.day); }
   catch (error) { showError(`详情计算失败：${String(error)}`); return; }
   const weekday = '日一二三四五六'[day.weekday];
+  const dayGua = lookupDayGua(day.dayCycle);
   $('#date-detail').innerHTML = `
     <div class="detail-header"><span class="side-overline">DATE INSIGHTS <span>·</span> 日期详览</span>
       <div class="large-date"><span>${String(day.day).padStart(2, '0')}</span><span class="date-suffix">${day.month}月 · 周${weekday}</span></div>
@@ -141,31 +140,20 @@ function renderDetail(): void {
         ${detailItem('黄黑道',day.ecliptic,day.twelveStar+'值日')}
         ${detailItem('星座',day.zodiac)}
       </div>
-      <div class="section-title star-section"><span>星宿 · 双口径</span><small>INDEPENDENT METHODS</small></div>
+      <div class="section-title star-section"><span>日干支 · 卦象映射</span><small>SIXTY-DAY CYCLE</small></div>
+      <div class="gua-highlight"><span class="gua-symbol">${escapeHtml(day.dayCycle)}</span><div><small>${escapeHtml(day.dayCycle)}日所对应的卦象和名称</small><strong>${escapeHtml(dayGua?.ying ?? '—')}</strong><span>${escapeHtml(dayGua?.gua ?? '暂无对应卦象')}</span></div></div>
+      <div class="section-title star-section"><span>传统二十七宿</span><small>LUNAR MONTH & DAY</small></div>
       <div class="star-block primary-star"><div class="star-symbol">廿七</div><div><small>传统农历月日算法 · 27 宿</small><strong>${escapeHtml(day.star27)}</strong><span>${day.monthSigned < 0 ? '闰月沿用对应月份资料' : '采用公开月日起宿循环算法'}</span></div></div>
-      <div class="star-block secondary-star"><div class="star-symbol">廿八</div><div><small>Tyme 值日体系 · 28 宿</small><strong>${escapeHtml(day.star28)}</strong><span>${escapeHtml(day.star28Beast)} · ${escapeHtml(day.star28Animal)} · ${escapeHtml(day.star28Luck)}</span></div></div>
-      <p class="star-note">两种口径都能成立，但不可互相覆盖或用于验证对方。农历闰月沿用同名农历月份，属于当前项目假设。</p>
+      <p class="star-note">闰月沿用同名农历月份的二十七宿规则，属于当前项目假设。</p>
     </div>`;
 }
 
 function renderCatalog(): void {
-  const list = guaEntries().filter(r => `${r.gua} ${r.ying}`.includes(keyword));
+  const list = guaEntries().filter(r => `${r.dayCycle} ${r.gua} ${r.ying}`.includes(keyword));
   $('#catalog-content').innerHTML = list.length ? list.map(r => `<article class="catalog-entry">
-    <span class="catalog-number">${String(r.index).padStart(2,'0')}</span>
+    <span class="catalog-number">${escapeHtml(r.dayCycle)}</span>
     <div><h3>${escapeHtml(r.gua)}</h3><p>${escapeHtml(r.ying)}</p></div>
   </article>`).join('') : '<p class="no-results">没有找到匹配的卦象。</p>';
-}
-
-function setTab(next: Tab): void {
-  tab = next;
-  $('#calendar-view').toggleAttribute('hidden',tab !== 'calendar');
-  $('#catalog-view').toggleAttribute('hidden',tab !== 'catalog');
-  document.querySelectorAll<HTMLButtonElement>('[data-tab]').forEach(button => {
-    const selectedTab = button.dataset.tab === tab;
-    button.classList.toggle('active', selectedTab);
-    button.setAttribute('aria-current',String(selectedTab));
-  });
-  if (tab === 'catalog') renderCatalog();
 }
 
 function pickDate(value: string): void {
@@ -193,11 +181,7 @@ function initEvents(): void {
       const safeDay = Math.min(d,new Date(Date.UTC(next.year,next.month,0)).getUTCDate());
       pickDate(formatISO(next.year,next.month,safeDay)); return;
     }
-    const tabBtn = event.target.closest<HTMLElement>('[data-tab]');
-    if (tabBtn?.dataset.tab === 'calendar' || tabBtn?.dataset.tab === 'catalog') {
-      setTab(tabBtn.dataset.tab);return;
-    }
-    if (event.target.closest('#today-button')) {pickDate(todayInChina());setTab('calendar');}
+    if (event.target.closest('#today-button')) {pickDate(todayInChina());}
   });
   $<HTMLInputElement>('#month-jump').addEventListener('change',e => {
     const v = (e.target as HTMLInputElement).value;
@@ -217,7 +201,7 @@ function initEvents(): void {
 shell();
 initEvents();
 renderCalendar();
-setTab(tab);
+renderCatalog();
 // 可被自动化截图测试和诊断脚本只读获取，非业务接口。
 Object.defineProperty(window,'__TYME_AUDIT__', {
   value: Object.freeze({starScheme:'traditional-27',guayings:guaEntries().length}),
