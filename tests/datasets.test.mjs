@@ -52,16 +52,18 @@ test('非法月日必须拒绝，不能落入错误数组元素', () => {
   }
 });
 
-test('用户确认的 60 组 GUA_YING 按原字面和顺序保留', () => {
+test('用户确认的 60 组 GUA_YING 只规范两处卦名，不改变顺序和对应名称', () => {
   const entries = guaEntries();
   assert.equal(GUA_YING.length, 60);
   assert.equal(entries[0].raw, '天风姤/n天罡');
   assert.equal(entries[12].raw, '坎为水/n提摄格');
-  assert.equal(entries[35].raw, '火雷噬磕/n甪端');
-  assert.equal(entries[54].raw, '山天大蓄/n九婴');
+  assert.equal(entries[35].raw, '火雷噬嗑/n甪端');
+  assert.equal(entries[54].raw, '山天大畜/n九婴');
   assert.equal(entries[59].raw, '泽天夬/n空');
   assert.ok(entries.every(e => e.gua && e.ying && e.raw === `${e.gua}/n${e.ying}`));
   assert.equal(new Set(entries.map(e => e.gua)).size, 60);
+  assert.ok(!GUA_YING.some(x => x.includes('噬磕') || x.includes('大蓄')),
+    '不能再次将两处卦名回退到旧字形');
 });
 
 test('日干支与 60 组卦象逐项对应，甲子日必须是天风姤／天罡', () => {
@@ -90,6 +92,8 @@ test('六爻 SVG 按八卦上下三爻正确绘制，不修改原始卦名', () 
   assert.deepEqual(getHexagramLines('坎为水'), [false,true,false,false,true,false]);
   assert.deepEqual(getHexagramLines('巽为风'), [true,true,false,true,true,false]);
   assert.deepEqual(getHexagramLines('离为火'), [true,false,true,true,false,true]);
+  assert.deepEqual(getHexagramLines('火雷噬嗑'), [true,false,true,false,false,true]);
+  assert.deepEqual(getHexagramLines('山天大畜'), [true,false,false,true,true,true]);
   assert.equal(getHexagramLines('无名之卦'), null);
   assert.equal(renderHexagram('无名之卦'), '');
   for (const entry of guaEntries()) {
@@ -112,5 +116,19 @@ test('查询只高亮匹配当月日期：支持干支、二十七宿、卦名�
   }
   for (const query of ['乙丑','室宿','朱厌','腊月']) {
     assert.equal(matchesDay(sample,query),false,`Unexpected query ${query}`);
+  }
+});
+
+test('规范卦名可以按甲子映射检索，其他对应名称保持不变', () => {
+  const bite = guaEntries()[35];
+  const store = guaEntries()[54];
+  assert.equal(lookupDayGua(bite.dayCycle).ying, '甪端');
+  assert.equal(lookupDayGua(store.dayCycle).ying, '九婴');
+  for (const [entry, name] of [[bite,'火雷噬嗑'],[store,'山天大畜']]) {
+    assert.equal(entry.gua, name);
+    assert.equal(matchesDay({
+      iso:'2026-10-27',dayCycle:entry.dayCycle,duty:'建',star27:'角宿',
+      lunarName:'初一',lunarMonthName:'九月',term:null,festival:null
+    },name),true);
   }
 });

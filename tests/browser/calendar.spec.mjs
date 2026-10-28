@@ -20,6 +20,26 @@ test('首页按六十甲子显示卦象和传统宜忌，无旧 Tyme 28 宿 UI',
   await expect(page.locator('#calendar-grid [data-date]')).toHaveCount(35);
 });
 
+test('通行卦名在日历、详情和查询中同步生效，对应名称保持不变',async ({page}) => {
+  for (const [iso,gua,ying,oldName] of [
+    ['2026-11-21','火雷噬嗑','甪端','火雷噬磕'],
+    ['2026-12-10','山天大畜','九婴','山天大蓄']
+  ]) {
+    await page.goto(`/DayPillar/?date=${iso}`);
+    const selected = page.locator(`#calendar-grid [data-date="${iso}"]`);
+    await expect(selected).toHaveAttribute('aria-pressed','true');
+    await expect(selected.locator('.day-gua')).toContainText(gua);
+    await expect(selected.locator('.day-gua')).toContainText(ying);
+    await expect(page.locator('#date-detail .gua-highlight')).toContainText(gua);
+    await expect(page.locator('#date-detail .gua-highlight')).toContainText(ying);
+    await expect(page.locator('#date-detail .hexagram-figure')).toBeVisible();
+    await expect(selected.locator('.day-gua')).not.toContainText(oldName);
+    await page.locator('#day-filter').fill(gua);
+    await expect(selected).toHaveClass(/is-matched/);
+    await expect(page.locator('#error-toast')).toBeHidden();
+  }
+});
+
 test('PR #2 品牌 Logo 在页面顶栏和 favicon 正确加载',async ({page}) => {
   await openCalendar(page);
   const logo=page.locator('a.brand img.brand-logo');
