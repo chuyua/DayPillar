@@ -175,6 +175,7 @@ select:focus-visible{outline:3px solid #95bdb2;outline-offset:3px}
 .culture-source:hover{color:#124b39}
 .beast-card{padding:17px 15px;background:#edf7f0;border:1px solid #cfe6d7;border-radius:10px;display:flex;flex-direction:column;gap:7px}
 .beast-card strong{font-family:'Noto Serif SC',serif;font-size:21px;color:#17533e}
+.beast-card .culture-kind{display:inline-flex;align-self:flex-start;font-size:11px;font-weight:700;color:#276b55;background:#dceee1;border:1px solid #b5d6c2;border-radius:6px;padding:4px 9px}
 .beast-card p{margin:0;color:#355e4b;font-size:12px;line-height:1.75}
 .beast-card span,.culture-disclaimer{font-size:11px;color:#526b5a;line-height:1.6}
 .culture-disclaimer{margin:7px 0 0}
@@ -187,5 +188,6 @@ select:focus-visible{outline:3px solid #95bdb2;outline-offset:3px}
   .culture-source:hover{color:#e5f8e7}
   .beast-card{background:#203f32;border-color:#527a63}
   .beast-card strong{color:#f4f8ed}
+  .beast-card .culture-kind{background:#315947;color:#e6f5e8;border-color:#709e81}
   .beast-card p,.beast-card span,.culture-disclaimer{color:#d1e4d1}
 }

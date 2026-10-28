@@ -40,10 +40,10 @@ test('通行卦名在日历、详情和查询中同步生效，对应名称保�
   }
 });
 
-test('卦象短义及山海经异兽介绍独立切换，狍鸮详情精确匹配目录链接',async ({page}) => {
+test('卦象短义及异兽和神煞介绍独立切换，狍鸮详情精确匹配目录链接',async ({page}) => {
   await page.goto('/DayPillar/?date=2026-10-28');
   const guaTab = page.getByRole('tab',{name:'卦象映射'});
-  const beastTab = page.getByRole('tab',{name:'山海经异兽介绍'});
+  const beastTab = page.getByRole('tab',{name:'异兽和神煞介绍'});
   await expect(guaTab).toHaveAttribute('aria-selected','true');
   await expect(beastTab).toHaveAttribute('aria-selected','false');
   await expect(page.locator('#culture-panel-hexagram .hexagram-figure')).toBeVisible();
@@ -55,13 +55,15 @@ test('卦象短义及山海经异兽介绍独立切换，狍鸮详情精确匹�
   await expect(beastTab).toHaveAttribute('aria-selected','true');
   await expect(page.locator('#culture-panel-hexagram')).toBeHidden();
   await expect(page.locator('#culture-panel-beast .beast-card strong')).toHaveText('狍鸮');
+  await expect(page.locator('#culture-panel-beast .culture-kind')).toHaveText('异兽 / 神兽');
   await expect(page.locator('#culture-panel-beast .beast-card p')).toContainText('羊身人面');
   await expect(page.locator('#culture-panel-beast .culture-source')).toHaveAttribute('href','https://tgqmdj.cn/dadian_show.php?did=8&sid=54');
-  await expect(page.locator('#culture-panel-beast .culture-disclaimer')).toContainText('不代表全部词条');
+  await expect(page.locator('#culture-panel-beast .culture-disclaimer')).toContainText('不表示当日');
 
   await page.locator('#calendar-grid [data-date="2026-10-17"]').click();
-  await expect(page.locator('#culture-panel-beast .beast-card strong')).toHaveText('暂无对应异兽资料');
-  await expect(page.locator('#culture-panel-beast .culture-source')).toHaveCount(0);
+  await expect(page.locator('#culture-panel-beast .beast-card strong')).toHaveText('天罡');
+  await expect(page.locator('#culture-panel-beast .culture-kind')).toHaveText('神煞与术数');
+  await expect(page.locator('#culture-panel-beast .culture-source')).toHaveAttribute('href','https://tgqmdj.cn/dadian_show.php?did=6&sid=13');
   await expect(beastTab).toHaveAttribute('aria-selected','true');
   await guaTab.focus();
   await page.keyboard.press('ArrowRight');
@@ -73,12 +75,12 @@ test('卦象短义及山海经异兽介绍独立切换，狍鸮详情精确匹�
   await expect(page.locator('#error-toast')).toBeHidden();
 });
 
-test('山海经异兽介绍在移动抽屉内可通过键盘访问来源、正常关闭',async ({page}) => {
+test('异兽和神煞介绍在移动抽屉内可通过键盘访问来源、正常关闭',async ({page}) => {
   await page.setViewportSize({width:390,height:844});
   await page.goto('/DayPillar/?date=2026-11-21');
   await page.locator('#calendar-grid [data-date="2026-11-21"]').click();
   await expect(page.locator('#detail-close')).toBeFocused();
-  const beastTab = page.getByRole('tab',{name:'山海经异兽介绍'});
+  const beastTab = page.getByRole('tab',{name:'异兽和神煞介绍'});
   await beastTab.click();
   await expect(page.locator('#culture-panel-beast .beast-card strong')).toHaveText('甪端');
   await expect(page.locator('#culture-panel-beast .culture-source')).toHaveAttribute('href','https://tgqmdj.cn/dadian_show.php?did=7&sid=30');
@@ -89,6 +91,22 @@ test('山海经异兽介绍在移动抽屉内可通过键盘访问来源、正�
   await expect(page.locator('#detail-close')).toBeFocused();
   await page.keyboard.press('Escape');
   await expect(page.locator('#detail-panel')).not.toHaveClass(/is-open/);
+});
+
+test('九星与空亡词条保留原映射名称，提供独立分类和精确来源',async ({page}) => {
+  for (const [date,name,category,link] of [
+    ['2026-10-25','天蓬','奇门九星','did=6&sid=24'],
+    ['2026-11-16','亡','空亡术语','did=5&sid=264'],
+    ['2026-12-15','空','空亡术语','did=5&sid=264']
+  ]) {
+    await page.goto(`/DayPillar/?date=${date}`);
+    await page.getByRole('tab',{name:'异兽和神煞介绍'}).click();
+    await expect(page.locator('#culture-panel-beast .beast-card strong')).toHaveText(name);
+    await expect(page.locator('#culture-panel-beast .culture-kind')).toHaveText(category);
+    await expect(page.locator('#culture-panel-beast .culture-source')).toHaveAttribute('href',`https://tgqmdj.cn/dadian_show.php?${link}`);
+    await expect(page.locator('#culture-panel-beast .beast-card p')).not.toBeEmpty();
+    await expect(page.locator('#error-toast')).toBeHidden();
+  }
 });
 
 test('PR #2 品牌 Logo 在页面顶栏和 favicon 正确加载',async ({page}) => {

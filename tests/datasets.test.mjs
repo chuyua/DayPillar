@@ -5,7 +5,7 @@ import {GUA_YING, DAY_CYCLES, guaEntries, lookupDayGua} from '../src/data/gua-yi
 import {getHexagramLines, renderHexagram} from '../src/data/hexagram.mjs';
 import {matchesDay} from '../src/data/day-filter.mjs';
 import {boundedCacheGet} from '../src/data/bounded-cache.mjs';
-import {hexagramIntroNames,lookupHexagramIntro,lookupShanhaiBeast,shanhaiBeasts} from '../src/data/cultural-notes.mjs';
+import {hexagramIntroNames,lookupHexagramIntro,lookupShanhaiBeast,shanhaiBeasts,lookupCultureEntry,culturalEntries} from '../src/data/cultural-notes.mjs';
 
 test('有界缓存：命中不重算、最近访问保留、异常不污染数据', () => {
   const cache=new Map();
@@ -168,4 +168,57 @@ test('山海经异兽介绍只收录目录中与 60 甲子精确匹配的 17 条
   for (const nonBeast of ['天罡','九地','魑','魅','魍','魉','虚耗','空','不存在']) {
     assert.equal(lookupShanhaiBeast(nonBeast), null, `Not a beast: ${nonBeast}`);
   }
+});
+
+test('异兽和神煞介绍覆盖全部 60 个原始对应名称，分类与来源可追溯', () => {
+  const originals = guaEntries();
+  const records = culturalEntries();
+  assert.equal(records.length, 60);
+  assert.deepEqual(new Set(records.map(entry => entry.name)),new Set(originals.map(entry => entry.ying)));
+  for (const original of originals) {
+    const record = lookupCultureEntry(original.ying);
+    assert.ok(record, `Missing: ${original.ying}`);
+    assert.equal(record.name, original.ying);
+    assert.ok(record.category.length >= 3);
+    assert.ok(record.description.length > 15);
+    assert.match(record.source, /^https:\/\/tgqmdj\.cn\/dadian_show\.php\?did=(5|6|7|8|9|10)&sid=\d+$/);
+    assert.equal(Object.isFrozen(record),true);
+  }
+  const counts = Object.fromEntries(
+    [...new Set(records.map(entry=>entry.category))].map(category=>
+      [category,records.filter(entry=>entry.category===category).length])
+  );
+  assert.deepEqual(counts,{
+    '异兽 / 神兽':17,'神煞与术数':5,'奇门九星':9,'神怪传说':5,
+    '空亡术语':2,'岁阳 · 天干纪名':10,'岁阴 · 地支纪名':12
+  });
+  assert.equal(lookupCultureEntry('不存在'),null);
+});
+
+test('新增术语依据词典原条目；异兽、九星、空亡、岁名不混为一类', () => {
+  for (const [name,category,did,sid] of [
+    ['天罡','神煞与术数',6,13],
+    ['九天','神煞与术数',6,14],
+    ['天蓬','奇门九星',6,24],
+    ['魑','神怪传说',7,26],
+    ['九地','神煞与术数',7,25],
+    ['虚耗','神怪传说',7,31],
+    ['太阴','神煞与术数',9,60],
+    ['太阳','神煞与术数',10,79],
+    ['提摄格','岁阴 · 地支纪名',9,64],
+    ['强围','岁阳 · 天干纪名',10,84],
+    ['涒滩','岁阴 · 地支纪名',9,74],
+    ['亡','空亡术语',5,264],
+    ['空','空亡术语',5,264],
+    ['狍鸮','异兽 / 神兽',8,54],
+    ['九婴','异兽 / 神兽',7,41]
+  ]) {
+    const entry = lookupCultureEntry(name);
+    assert.equal(entry.category,category);
+    assert.equal(entry.source,`https://tgqmdj.cn/dadian_show.php?did=${did}&sid=${sid}`);
+  }
+  for (const name of ['提摄格','强围','敦祥','淹茂','元黓']) {
+    assert.match(lookupCultureEntry(name).description,/原映射/);
+  }
+  assert.match(lookupCultureEntry('亡').description,/并非判断本日/);
 });
