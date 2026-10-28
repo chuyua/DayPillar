@@ -57,7 +57,7 @@ test('卦象短义及山海经异兽介绍独立切换，狍鸮详情精确匹�
   await expect(page.locator('#culture-panel-beast .beast-card strong')).toHaveText('狍鸮');
   await expect(page.locator('#culture-panel-beast .beast-card p')).toContainText('羊身人面');
   await expect(page.locator('#culture-panel-beast .culture-source')).toHaveAttribute('href','https://tgqmdj.cn/dadian_show.php?did=8&sid=54');
-  await expect(page.locator('#culture-panel-beast .culture-disclaimer')).toContainText('并非所有词条');
+  await expect(page.locator('#culture-panel-beast .culture-disclaimer')).toContainText('不代表全部词条');
 
   await page.locator('#calendar-grid [data-date="2026-10-17"]').click();
   await expect(page.locator('#culture-panel-beast .beast-card strong')).toHaveText('暂无对应异兽资料');
