@@ -5,6 +5,7 @@ import {GUA_YING, DAY_CYCLES, guaEntries, lookupDayGua} from '../src/data/gua-yi
 import {getHexagramLines, renderHexagram} from '../src/data/hexagram.mjs';
 import {matchesDay} from '../src/data/day-filter.mjs';
 import {boundedCacheGet} from '../src/data/bounded-cache.mjs';
+import {hexagramIntroNames,lookupHexagramIntro,lookupShanhaiBeast,shanhaiBeasts} from '../src/data/cultural-notes.mjs';
 
 test('有界缓存：命中不重算、最近访问保留、异常不污染数据', () => {
   const cache=new Map();
@@ -130,5 +131,41 @@ test('规范卦名可以按甲子映射检索，其他对应名称保持不变',
       iso:'2026-10-27',dayCycle:entry.dayCycle,duty:'建',star27:'角宿',
       lunarName:'初一',lunarMonthName:'九月',term:null,festival:null
     },name),true);
+  }
+});
+
+test('每条六十甲子卦象有唯一的简短介绍，保留通行卦名和原映射', () => {
+  const entries = guaEntries();
+  const intros = hexagramIntroNames();
+  assert.equal(intros.length, 60);
+  assert.equal(new Set(intros).size, 60);
+  assert.deepEqual(new Set(intros), new Set(entries.map(e=>e.gua)));
+  for (const entry of entries) {
+    const intro = lookupHexagramIntro(entry.gua);
+    assert.equal(typeof intro, 'string');
+    assert.ok(intro.length >= 10 && intro.length < 80, `Intro length: ${entry.gua}`);
+  }
+  assert.match(lookupHexagramIntro('火雷噬嗑'), /阻碍/);
+  assert.match(lookupHexagramIntro('山天大畜'), /积/);
+  assert.equal(lookupHexagramIntro('火雷噬磕'), null);
+  assert.equal(lookupHexagramIntro('不存在'), null);
+});
+
+test('山海经异兽介绍只收录目录中与 60 甲子精确匹配的 17 条异兽，链接指向原词条', () => {
+  const beasts = shanhaiBeasts();
+  const names = new Set(guaEntries().map(e=>e.ying));
+  assert.equal(beasts.length, 17);
+  assert.equal(new Set(beasts.map(b=>b.name)).size, 17);
+  for (const beast of beasts) {
+    assert.ok(names.has(beast.name), `Unmapped beast: ${beast.name}`);
+    assert.equal(lookupShanhaiBeast(beast.name), beast);
+    assert.match(beast.source, /^https:\/\/tgqmdj\.cn\/dadian_show\.php\?did=(7|8)&sid=\d+$/);
+    assert.ok(beast.description.length >= 12 && beast.description.length < 100);
+  }
+  assert.match(lookupShanhaiBeast('狍鸮').source, /did=8&sid=54$/);
+  assert.match(lookupShanhaiBeast('甪端').source, /did=7&sid=30$/);
+  assert.match(lookupShanhaiBeast('九婴').source, /did=7&sid=41$/);
+  for (const nonBeast of ['天罡','九地','魑','魅','魍','魉','虚耗','空','不存在']) {
+    assert.equal(lookupShanhaiBeast(nonBeast), null, `Not a beast: ${nonBeast}`);
   }
 });

@@ -40,6 +40,57 @@ test('通行卦名在日历、详情和查询中同步生效，对应名称保�
   }
 });
 
+test('卦象短义及山海经异兽介绍独立切换，狍鸮详情精确匹配目录链接',async ({page}) => {
+  await page.goto('/DayPillar/?date=2026-10-28');
+  const guaTab = page.getByRole('tab',{name:'卦象映射'});
+  const beastTab = page.getByRole('tab',{name:'山海经异兽介绍'});
+  await expect(guaTab).toHaveAttribute('aria-selected','true');
+  await expect(beastTab).toHaveAttribute('aria-selected','false');
+  await expect(page.locator('#culture-panel-hexagram .hexagram-figure')).toBeVisible();
+  await expect(page.locator('#culture-panel-hexagram .gua-info strong')).toHaveText('风水涣');
+  await expect(page.locator('#culture-panel-hexagram .gua-info p')).not.toBeEmpty();
+  await expect(page.locator('#culture-panel-beast')).toBeHidden();
+
+  await beastTab.click();
+  await expect(beastTab).toHaveAttribute('aria-selected','true');
+  await expect(page.locator('#culture-panel-hexagram')).toBeHidden();
+  await expect(page.locator('#culture-panel-beast .beast-card strong')).toHaveText('狍鸮');
+  await expect(page.locator('#culture-panel-beast .beast-card p')).toContainText('羊身人面');
+  await expect(page.locator('#culture-panel-beast .culture-source')).toHaveAttribute('href','https://tgqmdj.cn/dadian_show.php?did=8&sid=54');
+  await expect(page.locator('#culture-panel-beast .culture-disclaimer')).toContainText('并非所有词条');
+
+  await page.locator('#calendar-grid [data-date="2026-10-17"]').click();
+  await expect(page.locator('#culture-panel-beast .beast-card strong')).toHaveText('暂无对应异兽资料');
+  await expect(page.locator('#culture-panel-beast .culture-source')).toHaveCount(0);
+  await expect(beastTab).toHaveAttribute('aria-selected','true');
+  await guaTab.focus();
+  await page.keyboard.press('ArrowRight');
+  await expect(beastTab).toBeFocused();
+  await page.keyboard.press('Home');
+  await expect(guaTab).toBeFocused();
+  await expect(page.locator('#culture-panel-hexagram .gua-info strong')).toHaveText('天风姤');
+  await expect(page.locator('#culture-panel-hexagram .gua-info')).toContainText('天罡');
+  await expect(page.locator('#error-toast')).toBeHidden();
+});
+
+test('山海经异兽介绍在移动抽屉内可通过键盘访问来源、正常关闭',async ({page}) => {
+  await page.setViewportSize({width:390,height:844});
+  await page.goto('/DayPillar/?date=2026-11-21');
+  await page.locator('#calendar-grid [data-date="2026-11-21"]').click();
+  await expect(page.locator('#detail-close')).toBeFocused();
+  const beastTab = page.getByRole('tab',{name:'山海经异兽介绍'});
+  await beastTab.click();
+  await expect(page.locator('#culture-panel-beast .beast-card strong')).toHaveText('甪端');
+  await expect(page.locator('#culture-panel-beast .culture-source')).toHaveAttribute('href','https://tgqmdj.cn/dadian_show.php?did=7&sid=30');
+  await beastTab.focus();
+  await page.keyboard.press('Tab');
+  await expect(page.locator('#culture-panel-beast .culture-source')).toBeFocused();
+  await page.keyboard.press('Tab');
+  await expect(page.locator('#detail-close')).toBeFocused();
+  await page.keyboard.press('Escape');
+  await expect(page.locator('#detail-panel')).not.toHaveClass(/is-open/);
+});
+
 test('PR #2 品牌 Logo 在页面顶栏和 favicon 正确加载',async ({page}) => {
   await openCalendar(page);
   const logo=page.locator('a.brand img.brand-logo');

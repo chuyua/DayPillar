@@ -160,3 +160,32 @@ select:focus-visible{outline:3px solid #95bdb2;outline-offset:3px}
   .taboo-avoid .taboo-tag{background:#533c2f;color:#fae3d0;border-color:#967152}
   .taboo-empty{color:#bbc8b7}
 }
+
+/* 两个文化类别互不混用：六爻图在左，卦名及短义在右。 */
+.culture-tabs{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px;margin:0 0 10px}
+.culture-tabs button{min-width:0;padding:10px 3px;background:#f1f6f1;border:1px solid #c9ded0;border-radius:8px;color:#386252;font-weight:600;font-size:12px;line-height:1.35}
+.culture-tabs button[aria-selected="true"]{background:#dfeee4;color:#194b3d;border-color:#579780;box-shadow:inset 0 -2px 0 #286b55}
+.culture-tabs button:hover{background:#e6f1e8}
+.gua-highlight{align-items:center}
+.gua-info{min-width:0;flex:1}
+.gua-highlight .gua-info strong{font-size:20px;line-height:1.25;overflow-wrap:anywhere}
+.gua-info p{margin:2px 0 0;color:#355e4b;font-size:12px;line-height:1.65}
+.gua-highlight .gua-info .gua-related{font-size:11px;color:#4c715c}
+.culture-source{display:inline-block;padding:8px 2px 4px;color:#236551;font-size:11px;text-decoration:underline;text-underline-offset:3px}
+.culture-source:hover{color:#124b39}
+.beast-card{padding:17px 15px;background:#edf7f0;border:1px solid #cfe6d7;border-radius:10px;display:flex;flex-direction:column;gap:7px}
+.beast-card strong{font-family:'Noto Serif SC',serif;font-size:21px;color:#17533e}
+.beast-card p{margin:0;color:#355e4b;font-size:12px;line-height:1.75}
+.beast-card span,.culture-disclaimer{font-size:11px;color:#526b5a;line-height:1.6}
+.culture-disclaimer{margin:7px 0 0}
+@media(prefers-color-scheme:dark){
+  .culture-tabs button{background:#243d32;color:#daebdc;border-color:#54745e}
+  .culture-tabs button[aria-selected="true"]{background:#345944;color:#fff;border-color:#86b69a;box-shadow:inset 0 -2px 0 #b1e0bd}
+  .culture-tabs button:hover{background:#315342}
+  .gua-info p,.gua-highlight .gua-info .gua-related{color:#d5e9d8}
+  .culture-source{color:#b5e0c2}
+  .culture-source:hover{color:#e5f8e7}
+  .beast-card{background:#203f32;border-color:#527a63}
+  .beast-card strong{color:#f4f8ed}
+  .beast-card p,.beast-card span,.culture-disclaimer{color:#d1e4d1}
+}

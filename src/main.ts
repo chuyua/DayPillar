@@ -7,6 +7,7 @@ import {guaEntries, lookupDayGua} from './data/gua-ying.mjs';
 import {renderHexagram} from './data/hexagram.mjs';
 import {matchesDay} from './data/day-filter.mjs';
 import {boundedCacheGet} from './data/bounded-cache.mjs';
+import {HEXAGRAM_SOURCE, lookupHexagramIntro, lookupShanhaiBeast} from './data/cultural-notes.mjs';
 
 let today = todayInChina();
 const current = parseISO(new URLSearchParams(location.search).get('date') ?? '')
@@ -22,6 +23,7 @@ const tabooCache = new Map<string, ReturnType<typeof getDayTaboos>>();
 let compact = window.matchMedia('(max-width: 680px)').matches;
 let dayFilter = '';
 let ignoreGridClickUntil = 0;
+let culturalTab: 'hexagram' | 'beast' = 'hexagram';
 
 const $ = <T extends Element = HTMLElement>(selector: string): T => {
   const element = document.querySelector<T>(selector);
@@ -187,6 +189,10 @@ function renderDetail(): void {
   catch (error) { showError(`详情计算失败：${String(error)}`); return; }
   const weekday = '日一二三四五六'[day.weekday];
   const dayGua = lookupDayGua(day.dayCycle);
+  const guaName = dayGua?.gua ?? '';
+  const guaIntro = lookupHexagramIntro(guaName);
+  const beast = lookupShanhaiBeast(dayGua?.ying ?? '');
+  const guaActive = culturalTab === 'hexagram';
   let taboos: ReturnType<typeof getDayTaboos> | null = null;
   try {
     taboos = boundedCacheGet(tabooCache, day.iso, 32,
@@ -213,8 +219,20 @@ function renderDetail(): void {
         ${eclipticItem(day)}
         ${detailItem('星座',day.zodiac)}
       </div>
-      <div class="section-title star-section"><span>日干支 · 卦象映射</span><small>SIXTY-DAY CYCLE</small></div>
-      <div class="gua-highlight"><div class="gua-symbol-wrap">${renderHexagram(dayGua?.gua ?? '')}<span>${escapeHtml(day.dayCycle)}日</span></div><div><small>${escapeHtml(day.dayCycle)}日所对应的卦象和名称</small><strong>${escapeHtml(dayGua?.ying ?? '—')}</strong><span>${escapeHtml(dayGua?.gua ?? '暂无对应卦象')}</span></div></div>
+      <div class="section-title star-section"><span>日干支 · 文化映射</span><small>SIXTY-DAY CYCLE</small></div>
+      <div class="culture-tabs" role="tablist" aria-label="文化资料类别">
+        <button type="button" id="culture-tab-hexagram" role="tab" data-culture-tab="hexagram" aria-controls="culture-panel-hexagram" aria-selected="${guaActive}" tabindex="${guaActive ? 0 : -1}">卦象映射</button>
+        <button type="button" id="culture-tab-beast" role="tab" data-culture-tab="beast" aria-controls="culture-panel-beast" aria-selected="${!guaActive}" tabindex="${guaActive ? -1 : 0}">山海经异兽介绍</button>
+      </div>
+      <div id="culture-panel-hexagram" role="tabpanel" aria-labelledby="culture-tab-hexagram" ${guaActive ? '' : 'hidden'}>
+        <div class="gua-highlight"><div class="gua-symbol-wrap">${renderHexagram(guaName)}<span>${escapeHtml(day.dayCycle)}日</span></div><div class="gua-info"><small>六十四卦 · 简要卦义</small><strong>${escapeHtml(guaName)}</strong><p>${escapeHtml(guaIntro ?? '暂无卦义介绍')}</p><span>对应名称：${escapeHtml(dayGua?.ying ?? '—')}</span></div></div>
+        <a class="culture-source" href="${HEXAGRAM_SOURCE}" target="_blank" rel="noopener noreferrer">参考六十四卦资料 ↗</a>
+      </div>
+      <div id="culture-panel-beast" role="tabpanel" aria-labelledby="culture-tab-beast" ${guaActive ? 'hidden' : ''}>
+        <div class="beast-card"><strong>${escapeHtml(beast?.name ?? '暂无对应异兽资料')}</strong><p>${escapeHtml(beast?.description ?? '本日对应名称未匹配到异兽词条。')}</p></div>
+        ${beast ? `<a class="culture-source" href="${escapeHtml(beast.source)}" target="_blank" rel="noopener noreferrer">查阅对应词典原文 ↗</a>` : ''}
+        <p class="culture-disclaimer">内容取自所引异兽词典及相关传说；不代表全部词条都直接出自《山海经》原文。</p>
+      </div>
       <div class="section-title star-section"><span>传统二十七宿</span><small>LUNAR MONTH & DAY</small></div>
       <div class="star-block primary-star"><div class="star-symbol">廿七</div><div><small>传统农历月日算法 · 27 宿</small><strong>${escapeHtml(day.star27)}</strong><span>${day.monthSigned < 0 ? '闰月沿用对应月份资料' : '采用公开月日起宿循环算法'}</span></div></div>
       <p class="star-note">闰月沿用同名农历月份的二十七宿规则，属于当前项目假设。</p>
@@ -223,6 +241,18 @@ function renderDetail(): void {
         <div class="taboo-group taboo-avoid"><h3>忌</h3><div class="taboo-items">${renderTaboos(taboos?.avoids ?? [])}</div></div></div>
       <p class="star-note">此处宜忌来自 tyme4ts 传统历书规则，仅供文化资料查阅，不作为现实决策依据。</p>
     </div>`;
+}
+
+function selectCulturalTab(tab: 'hexagram' | 'beast', moveFocus = false): void {
+  culturalTab = tab;
+  for (const kind of ['hexagram', 'beast'] as const) {
+    const active = kind === tab;
+    const button = $<HTMLButtonElement>(`#culture-tab-${kind}`);
+    button.setAttribute('aria-selected', String(active));
+    button.tabIndex = active ? 0 : -1;
+    $<HTMLElement>(`#culture-panel-${kind}`).hidden = !active;
+  }
+  if (moveFocus) $<HTMLButtonElement>(`#culture-tab-${tab}`).focus();
 }
 
 function isMobileDetail(): boolean {
@@ -300,6 +330,11 @@ function moveCalendar(offset: number, preserveFocus = false): void {
 function initEvents(): void {
   document.addEventListener('click', event => {
     if (!(event.target instanceof Element)) return;
+    const tabButton = event.target.closest<HTMLButtonElement>('[data-culture-tab]');
+    if (tabButton?.dataset.cultureTab === 'hexagram' || tabButton?.dataset.cultureTab === 'beast') {
+      selectCulturalTab(tabButton.dataset.cultureTab);
+      return;
+    }
     const day = event.target.closest<HTMLElement>('[data-date]');
     if (day?.dataset.date) {
       if (Date.now() < ignoreGridClickUntil) {event.preventDefault();return;}
@@ -384,9 +419,29 @@ function initEvents(): void {
       event.preventDefault();
       closeDetail();
     } else if (event.key === 'Tab') {
-      event.preventDefault();
-      $<HTMLButtonElement>('#detail-close').focus();
+      // 移动抽屉允许在标签与来源链接之间用 Tab 导航，仅在两端循环焦点。
+      const focusables = [...$('#detail-panel').querySelectorAll<HTMLElement>(
+        'button:not([disabled]):not([tabindex="-1"]), a[href]'
+      )].filter(el => !el.closest('[hidden]') && el.getClientRects().length > 0);
+      const first = focusables[0], last = focusables[focusables.length - 1];
+      if (!first || !last) return;
+      if (event.shiftKey && (document.activeElement === first || !$('#detail-panel').contains(document.activeElement))) {
+        event.preventDefault();
+        last.focus();
+      } else if (!event.shiftKey && (document.activeElement === last || !$('#detail-panel').contains(document.activeElement))) {
+        event.preventDefault();
+        first.focus();
+      }
     }
+  });
+  $('#date-detail').addEventListener('keydown', event => {
+    if (!(event.target instanceof Element)) return;
+    const tab = event.target.closest<HTMLButtonElement>('[data-culture-tab]');
+    if (!tab || !['ArrowLeft','ArrowRight','Home','End'].includes(event.key)) return;
+    event.preventDefault();
+    const next = event.key === 'Home' ? 'hexagram' : event.key === 'End' ? 'beast'
+      : tab.dataset.cultureTab === 'hexagram' ? 'beast' : 'hexagram';
+    selectCulturalTab(next, true);
   });
   window.addEventListener('resize', () => {
     if (!isMobileDetail()) closeDetail(false);
