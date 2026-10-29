@@ -8,6 +8,7 @@ import {renderHexagram} from './data/hexagram.mjs';
 import {matchesDay} from './data/day-filter.mjs';
 import {boundedCacheGet} from './data/bounded-cache.mjs';
 import {HEXAGRAM_SOURCE, lookupHexagramIntro, lookupCultureEntry} from './data/cultural-notes.mjs';
+import {deriveTraditionalAlmanac} from './data/traditional-almanac.mjs';
 
 let today = todayInChina();
 const current = parseISO(new URLSearchParams(location.search).get('date') ?? '')
@@ -193,6 +194,7 @@ function renderDetail(): void {
   const guaIntro = lookupHexagramIntro(guaName);
   const cultureEntry = lookupCultureEntry(dayGua?.ying ?? '');
   const guaActive = culturalTab === 'hexagram';
+  const traditional = deriveTraditionalAlmanac(day.monthCycleByTerm,day.dayCycle,day.recentSolarTerm);
   let taboos: ReturnType<typeof getDayTaboos> | null = null;
   try {
     taboos = boundedCacheGet(tabooCache, day.iso, 32,
@@ -219,6 +221,25 @@ function renderDetail(): void {
         ${eclipticItem(day)}
         ${detailItem('星座',day.zodiac)}
       </div>
+      ${traditional ? `
+      <div class="section-title star-section"><span>古法月建与历注</span><small>CLASSICAL ALMANAC</small></div>
+      <div class="ancient-almanac" aria-label="节令月建与传统神煞独立推演">
+        <div class="ancient-item"><span>阳建 · 月建</span><strong>${escapeHtml(traditional.monthBranch)}建 · ${traditional.monthNumber}月</strong><small>按节气交节划分</small></div>
+        <div class="ancient-item"><span>阴建 · 月厌</span><strong>${escapeHtml(traditional.monthYan)}${traditional.hitMonthYan ? ' · 今日值厌' : ''}</strong><small>正月戌起，逆行十二辰</small></div>
+        <div class="ancient-item"><span>月厌对冲 · 厌对</span><strong>${escapeHtml(traditional.yanDui)}${traditional.hitYanDui ? ' · 今日值厌对' : ''}</strong><small>对冲月厌，不等于月内天罡</small></div>
+        <div class="ancient-item"><span>十二黄黑道</span><strong>${escapeHtml(traditional.twelveStar)} · ${traditional.ecliptic}</strong><small>月建配日支；与建除另算</small></div>
+        <div class="ancient-item"><span>月内天罡／河魁</span><strong>罡${escapeHtml(traditional.tianGang)} · 魁${escapeHtml(traditional.heKui)}</strong><small>${traditional.hitTianGang ? '今日值月内天罡' : traditional.hitHeKui ? '今日值月内河魁' : '此日均未值'}；不是六壬辰将</small></div>
+        <div class="ancient-item"><span>十二月将 · 中气换将</span><strong>${escapeHtml(traditional.generalName)} · ${escapeHtml(traditional.generalBranch)}</strong><small>${escapeHtml(traditional.generalBoundary)}中气起，唐《太白阴经》月将表</small></div>
+      </div>
+      ${traditional.hitYanDui && traditional.ecliptic === '黄道'
+        ? '<p class="ancient-intersection">此日黄道神与厌对同时出现：不同古法有不同象征，不可直接判定诸事皆吉。</p>' : ''}
+      <p class="star-note">文化历注，非吉凶断言。月将按中气、月建按节令；交节／交中气当天仅按日期归属，未精确到交接时刻。唐《太白阴经》记月将，其余规则参考《天宝历》佚文及后世校勘。</p>
+      <div class="ancient-sources">
+        <a href="https://zh.wikisource.org/zh-hans/太白陰經/卷十" target="_blank" rel="noopener noreferrer">唐《太白阴经》↗</a>
+        <a href="https://www.shidianguji.com/book/SK1618/chapter/1jursttq22522" target="_blank" rel="noopener noreferrer">月厌与厌对↗</a>
+        <a href="https://www.shidianguji.com/book/SK1618/chapter/1jurstuq9gl55" target="_blank" rel="noopener noreferrer">黄黑二道↗</a>
+        <a href="https://www.shidianguji.com/zh/book/SK1618/chapter/1m2ba99sxl2cm" target="_blank" rel="noopener noreferrer">月内天罡河魁↗</a>
+      </div>` : ''}
       <div class="section-title star-section"><span>日干支 · 文化映射</span><small>SIXTY-DAY CYCLE</small></div>
       <div class="culture-tabs" role="tablist" aria-label="文化资料类别">
         <button type="button" id="culture-tab-hexagram" role="tab" data-culture-tab="hexagram" aria-controls="culture-panel-hexagram" aria-selected="${guaActive}" tabindex="${guaActive ? 0 : -1}">卦象映射</button>

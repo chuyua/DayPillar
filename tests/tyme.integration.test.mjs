@@ -4,6 +4,50 @@ import assert from 'node:assert/strict';
 import {SolarDay, LunarDay} from 'tyme4ts';
 import {lookupTraditionalStar} from '../src/data/stars.mjs';
 import {DAY_CYCLES, lookupDayGua} from '../src/data/gua-ying.mjs';
+import {deriveTraditionalAlmanac} from '../src/data/traditional-almanac.mjs';
+
+test('古法黄黑道跨 1900—2100 年抽样与 tyme4ts 独立比对，无冲突', () => {
+  let checked=0;
+  for(let year=1900;year<=2100;year++) {
+    for(let month=1;month<=12;month++) {
+      // 每月两次，覆盖月初（交节附近）和月末。
+      for(const day of [2,23]) {
+        const solar=SolarDay.fromYmd(year,month,day);
+        const c=solar.getSixtyCycleDay();
+        const calendar=deriveTraditionalAlmanac(
+          c.getMonth().getName(),c.getSixtyCycle().getName(),
+          solar.getTermDay().getSolarTerm().getName()
+        );
+        assert.ok(calendar, `Missing date ${year}-${month}-${day}`);
+        assert.equal(calendar.twelveStar,c.getTwelveStar().getName(),
+          `Disagree with Tyme ${year}-${month}-${day}`);
+        checked++;
+      }
+    }
+  }
+  assert.equal(checked,4824);
+});
+
+test('立春只换节令月建，雨水才换唐月将；寅月辰日厌对与金匮可并存', () => {
+  for(const [date,monthBranch,monthYan,general,dayStar,hitDui] of [
+    [[2026,2,3],'丑','亥','神后','司命',false],
+    [[2026,2,4],'寅','戌','神后','玄武',false],
+    [[2026,2,11],'寅','戌','神后','金匮',true],
+    [[2026,2,18],'寅','戌','登明','勾陈',false],
+    [[2026,2,23],'寅','戌','登明','金匮',true],
+    [[2026,3,5],'卯','酉','登明','?',false]
+  ]) {
+    const solar=SolarDay.fromYmd(...date);
+    const c=solar.getSixtyCycleDay();
+    const a=deriveTraditionalAlmanac(c.getMonth().getName(),c.getSixtyCycle().getName(),
+      solar.getTermDay().getSolarTerm().getName());
+    assert.equal(a.monthBranch,monthBranch,date.join('-'));
+    assert.equal(a.monthYan,monthYan,date.join('-'));
+    assert.equal(a.generalName,general,date.join('-'));
+    if(dayStar!=='?') assert.equal(a.twelveStar,dayStar,date.join('-'));
+    assert.equal(a.hitYanDui,hitDui,date.join('-'));
+  }
+});
 
 test('tyme4ts 的每日宜忌 API 在首尾年份真实可用',() => {
   for (const [year,month,day] of [[1900,1,1],[2024,2,10],[2026,10,27],[2100,12,31]]) {

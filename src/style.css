@@ -191,3 +191,22 @@ select:focus-visible{outline:3px solid #95bdb2;outline-offset:3px}
   .beast-card .culture-kind{background:#315947;color:#e6f5e8;border-color:#709e81}
   .beast-card p,.beast-card span,.culture-disclaimer{color:#d1e4d1}
 }
+
+/* 古法历注独立于固定六十甲子文化映射，显示同日多套规则的并存。 */
+.ancient-almanac{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+.ancient-item{min-width:0;display:flex;flex-direction:column;gap:5px;padding:12px 11px;border:1px solid #d5e5d9;border-radius:9px;background:#f0f7f1}
+.ancient-item>span{font-size:11px;color:#396c54;font-weight:700}
+.ancient-item>strong{font-size:15px;line-height:1.35;color:#174b39;overflow-wrap:anywhere}
+.ancient-item>small{font-size:10px;line-height:1.5;color:#4b6b58}
+.ancient-intersection{margin:9px 0 0;padding:9px 11px;border-inline-start:3px solid #bb8748;border-radius:5px;background:#f8f1e4;color:#785326;font-size:12px;line-height:1.6}
+.ancient-sources{display:flex;flex-wrap:wrap;gap:7px 11px;margin:7px 0 1px}
+.ancient-sources a{font-size:11px;color:#276b53;text-decoration:underline;text-underline-offset:3px;overflow-wrap:anywhere}
+@media(max-width:400px){
+  .ancient-almanac{grid-template-columns:1fr}
+}
+@media(prefers-color-scheme:dark){
+  .ancient-item{background:#203f32;border-color:#557c64}
+  .ancient-item>span,.ancient-item>strong,.ancient-item>small{color:#e1f1e1}
+  .ancient-intersection{background:#413726;color:#f4d7a6;border-inline-start-color:#d6aa61}
+  .ancient-sources a{color:#c0e5cb}
+}

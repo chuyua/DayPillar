@@ -6,6 +6,65 @@ import {getHexagramLines, renderHexagram} from '../src/data/hexagram.mjs';
 import {matchesDay} from '../src/data/day-filter.mjs';
 import {boundedCacheGet} from '../src/data/bounded-cache.mjs';
 import {hexagramIntroNames,lookupHexagramIntro,lookupShanhaiBeast,shanhaiBeasts,lookupCultureEntry,culturalEntries} from '../src/data/cultural-notes.mjs';
+import {deriveTraditionalAlmanac} from '../src/data/traditional-almanac.mjs';
+
+test('唐月将与古法月厌、厌对、黄黑道相互独立，寅月辰日同时金匮与厌对', () => {
+  const before = deriveTraditionalAlmanac('庚寅','丙辰','立春');
+  assert.equal(before.monthNumber,1);
+  assert.equal(before.monthBranch,'寅');
+  assert.equal(before.monthYan,'戌');
+  assert.equal(before.yanDui,'辰');
+  assert.equal(before.hitMonthYan,false);
+  assert.equal(before.hitYanDui,true);
+  assert.equal(before.twelveStar,'金匮');
+  assert.equal(before.ecliptic,'黄道');
+  assert.equal(before.generalName,'神后'); // 雨水尚未到，不能用正月亥将
+  assert.equal(before.generalBranch,'子');
+  assert.equal(before.generalBoundary,'大寒');
+  assert.equal(before.tianGang,'巳');  // 阳月平日，不能将厌对辰等同天罡
+  assert.equal(before.heKui,'亥');
+  assert.equal(before.hitTianGang,false);
+  const after = deriveTraditionalAlmanac('庚寅','戊辰','雨水');
+  assert.equal(after.twelveStar,'金匮');
+  assert.equal(after.hitYanDui,true);
+  assert.equal(after.generalName,'登明');
+  assert.equal(after.generalBranch,'亥');
+  assert.equal(after.generalBoundary,'雨水');
+});
+
+test('月厌及对冲按十二月逆转，月内天罡／河魁按阴阳月交换平收位', () => {
+  const branches='寅卯辰巳午未申酉戌亥子丑'.split('');
+  const months=new Set();
+  for(let i=0;i<12;i++){
+    const entry=deriveTraditionalAlmanac('甲'+branches[i],'甲子','大寒');
+    assert.equal(entry.monthNumber,i+1);
+    months.add(entry.monthYan);
+    assert.equal(entry.yanDui,branches[(2-i+12)%12]); // 正月辰起，逆行十二辰
+    const expectYang=i%2===0;
+    const labels = expectYang ? ['巳','亥'] : ['子','午'];
+    if(i===0)assert.deepEqual([entry.tianGang,entry.heKui],labels);
+    if(i===1)assert.deepEqual([entry.tianGang,entry.heKui],labels);
+    assert.equal(entry.hitMonthYan,entry.monthYan==='子');
+    assert.equal(entry.hitYanDui,entry.yanDui==='子');
+  }
+  assert.equal(months.size,12);
+  for(const x of [
+    ['甲x','甲子','立春'],['甲寅','甲x','雨水'],['甲寅','甲辰','无此节气']
+  ])assert.equal(deriveTraditionalAlmanac(...x),null);
+});
+
+test('十二中气月将依唐《太白阴经》十二月名表，节日不提前换将', () => {
+  const starts=['大寒','雨水','春分','谷雨','小满','夏至','大暑','处暑','秋分','霜降','小雪','冬至'];
+  const nextTerms=['立春','惊蛰','清明','立夏','芒种','小暑','立秋','白露','寒露','立冬','大雪','小寒'];
+  const generals=['神后子','登明亥','河魁戌','从魁酉','传送申','小吉未','胜光午','太乙巳','天罡辰','太冲卯','功曹寅','大吉丑'];
+  for(let i=0;i<12;i++){
+    const original=deriveTraditionalAlmanac('甲寅','甲子',starts[i]);
+    const still=deriveTraditionalAlmanac('甲寅','甲子',nextTerms[i]);
+    assert.equal(original.generalName+original.generalBranch,generals[i],starts[i]);
+    assert.equal(still.generalName+still.generalBranch,generals[i],nextTerms[i]);
+    assert.equal(still.generalBoundary,starts[i]);
+  }
+});
 
 test('有界缓存：命中不重算、最近访问保留、异常不污染数据', () => {
   const cache=new Map();

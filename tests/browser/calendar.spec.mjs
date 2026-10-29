@@ -109,6 +109,59 @@ test('九星与空亡词条保留原映射名称，提供独立分类和精确�
   }
 });
 
+test('唐代月将与月厌、厌对、金匮独立历注，节气前后结果可复核',async ({page}) => {
+  await page.goto('/DayPillar/?date=2026-02-11');
+  const panel=page.locator('.ancient-almanac');
+  await expect(panel).toBeVisible();
+  await expect(panel.locator('.ancient-item').filter({hasText:'阳建 · 月建'})).toContainText('寅建 · 1月');
+  await expect(panel.locator('.ancient-item').filter({hasText:'阴建 · 月厌'})).toContainText('戌');
+  await expect(panel.locator('.ancient-item').filter({hasText:'月厌对冲 · 厌对'})).toContainText('辰 · 今日值厌对');
+  await expect(panel.locator('.ancient-item').filter({hasText:'十二黄黑道'})).toContainText('金匮 · 黄道');
+  await expect(panel.locator('.ancient-item').filter({hasText:'月内天罡／河魁'})).toContainText('罡巳 · 魁亥');
+  await expect(panel.locator('.ancient-item').filter({hasText:'十二月将'})).toContainText('神后 · 子');
+  await expect(page.locator('.ancient-intersection')).toContainText('同时出现');
+  await expect(page.locator('.ancient-sources a')).toHaveCount(4);
+
+  await page.goto('/DayPillar/?date=2026-02-18');
+  await expect(page.locator('.ancient-item').filter({hasText:'阳建 · 月建'})).toContainText('寅建');
+  await expect(page.locator('.ancient-item').filter({hasText:'十二月将'})).toContainText('登明 · 亥');
+
+  await page.goto('/DayPillar/?date=2026-02-23');
+  await expect(page.locator('.ancient-item').filter({hasText:'月厌对冲 · 厌对'})).toContainText('今日值厌对');
+  await expect(page.locator('.ancient-item').filter({hasText:'十二黄黑道'})).toContainText('金匮 · 黄道');
+  await expect(page.locator('.ancient-item').filter({hasText:'十二月将'})).toContainText('登明 · 亥');
+  await expect(page.locator('.ancient-intersection')).toBeVisible();
+});
+
+test('月内天罡／河魁与同名的固定六十甲子对应资料不混用',async ({page}) => {
+  await page.goto('/DayPillar/?date=2026-02-12');
+  const k=page.locator('.ancient-item').filter({hasText:'月内天罡／河魁'});
+  await expect(k).toContainText('罡巳 · 魁亥');
+  await expect(k).toContainText('今日值月内天罡');
+  await expect(page.locator('.ancient-item').filter({hasText:'十二月将'})).toContainText('神后 · 子');
+  await expect(page.locator('#culture-panel-hexagram .gua-info')).toBeVisible();
+  await expect(page.locator('#error-toast')).toBeHidden();
+});
+
+test('320px 手机仍可读古法历注及来源，选日无横向溢出',async ({page}) => {
+  await page.setViewportSize({width:320,height:720});
+  await page.goto('/DayPillar/?date=2026-02-11');
+  await page.locator('#calendar-grid [data-date="2026-02-11"]').click();
+  await expect(page.locator('#detail-panel')).toHaveClass(/is-open/);
+  await expect(page.locator('.ancient-almanac')).toBeVisible();
+  await expect(page.locator('.ancient-sources a').first()).toHaveAttribute('rel','noopener noreferrer');
+  const bounds=await page.evaluate(()=>({
+    outer:document.documentElement.scrollWidth,
+    inner:document.documentElement.clientWidth,
+    aside:document.querySelector('.detail-panel').scrollWidth,
+    asideClient:document.querySelector('.detail-panel').clientWidth
+  }));
+  expect(bounds.outer).toBeLessThanOrEqual(bounds.inner+1);
+  expect(bounds.aside).toBeLessThanOrEqual(bounds.asideClient+1);
+  await page.keyboard.press('Escape');
+  await expect(page.locator('#detail-panel')).not.toHaveClass(/is-open/);
+});
+
 test('PR #2 品牌 Logo 在页面顶栏和 favicon 正确加载',async ({page}) => {
   await openCalendar(page);
   const logo=page.locator('a.brand img.brand-logo');

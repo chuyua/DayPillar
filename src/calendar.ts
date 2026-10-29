@@ -21,6 +21,7 @@ export interface CalendarDay {
   twelveStar: string;
   ecliptic: string;
   term: string | null;
+  recentSolarTerm: string;
   festival: string | null;
   zodiac: string;
 }
@@ -84,6 +85,7 @@ export function getCalendarDay(year: number, month: number, day: number): Calend
     twelveStar: twelveStar.getName(),
     ecliptic: twelveStar.getEcliptic().getName(),
     term: termDay.getDayIndex() === 0 ? termDay.getSolarTerm().getName() : null,
+    recentSolarTerm: termDay.getSolarTerm().getName(),
     festival,
     zodiac: solar.getConstellation().getName()
   };
