@@ -47,3 +47,42 @@ test('重要日历信息在浅色和深色模式下的文字对比度均不少�
     }
   }
 });
+
+test('Hallmark 精修：双主题键盘焦点、卦象辅助文字及表单边框可辨认',async ({page}) => {
+  await page.goto('/DayPillar/?date=2026-02-11');
+  for(const scheme of ['light','dark']) {
+    await page.emulateMedia({colorScheme:scheme});
+    const colors=await page.evaluate(()=>{
+      const color=selector=>getComputedStyle(document.querySelector(selector));
+      return {
+        focus:getComputedStyle(document.documentElement).getPropertyValue('--focus-ring').trim(),
+        surface:color('.calendar-panel').backgroundColor,
+        label:color('.gua-highlight .gua-symbol-wrap>span').color,
+        help:color('.gua-highlight .gua-info small').color,
+        guaBackground:color('.gua-highlight').backgroundColor,
+        starLabel:color('.star-block>div:last-child>span').color,
+        starBackground:color('.star-block').backgroundColor,
+        inputBorder:color('.filter-toolbar input').borderTopColor
+      };
+    });
+    expect(contrastRatio(colors.focus,colors.surface),`${scheme} focus ring`).toBeGreaterThanOrEqual(3);
+    expect(contrastRatio(colors.label,colors.guaBackground),`${scheme} gua label`).toBeGreaterThanOrEqual(4.5);
+    expect(contrastRatio(colors.help,colors.guaBackground),`${scheme} gua help`).toBeGreaterThanOrEqual(4.5);
+    expect(contrastRatio(colors.starLabel,colors.starBackground),`${scheme} 27 star explanation`).toBeGreaterThanOrEqual(4.5);
+    expect(contrastRatio(colors.inputBorder,colors.surface),`${scheme} input edge`).toBeGreaterThanOrEqual(3);
+  }
+});
+
+test('Hallmark 精修：320px 移动日历关键文字不低于 11px 且无水平溢出',async ({page}) => {
+  await page.setViewportSize({width:320,height:740});
+  await page.goto('/DayPillar/?date=2026-02-11');
+  for(const selector of ['.day-cycle','.day-gua','.day-star','.day-lunar']) {
+    const size=await page.locator('#calendar-grid [data-date="2026-02-11"] '+selector).evaluate(el=>parseFloat(getComputedStyle(el).fontSize));
+    expect(size,`mobile readable ${selector}`).toBeGreaterThanOrEqual(11);
+  }
+  expect(await page.evaluate(()=>document.documentElement.scrollWidth)).toBeLessThanOrEqual(321);
+  await page.locator('#calendar-grid [data-date="2026-02-11"]').click();
+  await expect(page.locator('#detail-panel')).toHaveClass(/is-open/);
+  await page.keyboard.press('Escape');
+  await expect(page.locator('#detail-panel')).not.toHaveClass(/is-open/);
+});
