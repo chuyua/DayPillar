@@ -1,7 +1,10 @@
 import {test,expect} from '@playwright/test';
 
 function luminance(rgb) {
-  const channels=rgb.match(/[\d.]+/g)?.slice(0,3).map(Number);
+  // CSS custom properties preserve hex notation; computed element colors may be rgb().
+  const channels=/^#[0-9a-f]{6}$/i.test(rgb)
+    ? [1,3,5].map(i=>parseInt(rgb.slice(i,i+2),16))
+    : rgb.match(/[\d.]+/g)?.slice(0,3).map(Number);
   if (!channels || channels.length !== 3) throw new Error(`Unexpected CSS color: ${rgb}`);
   const linear=channels.map(value => {
     const x=value/255;
