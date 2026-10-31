@@ -400,3 +400,176 @@ test.describe('移动端日期交互',() => {
     await expect(page.locator('#error-toast')).toBeHidden();
   });
 });
+
+test('跨月午夜自动刷新今天语义，离开月份后不残留标记',async ({page}) => {
+  await page.clock.install({time:new Date('2026-07-31T15:59:00Z')});
+  await page.goto('/DayPillar/?date=2026-07-31');
+  await page.clock.fastForward(61_000);
+  await expect(page.locator('[aria-current="date"]')).toHaveCount(1);
+  await expect(page.locator('[data-date="2026-08-01"]')).toHaveAttribute('aria-current','date');
+  await expect(page.locator('[data-date="2026-07-31"]')).not.toHaveAttribute('aria-current','date');
+  await page.locator('#today-button').click();
+  await expect(page.locator('#month-label')).toContainText('08 月');
+  await expect(page.locator('[aria-current="date"]')).toHaveCount(1);
+  await page.locator('[data-change="12"]').click();
+  await expect(page.locator('[aria-current="date"]')).toHaveCount(0);
+});
+
+test('搜索支持干支、通行卦名、二十七宿与节气的最近匹配',async ({page}) => {
+  for(const [keyword,origin,next] of [
+    ['甲子','2026-10-17','2026-12-16'],
+    ['火雷噬嗑','2026-11-21','2027-01-20'],
+    ['雨水','2026-02-19','2027-02-19'],
+    ['角','2026-10-31',null]
+  ]) {
+    await page.goto('/DayPillar/?date='+origin);
+    await page.locator('#day-filter').fill(keyword);
+    await page.locator('#day-filter').press('Enter');
+    if(next) await expect(page).toHaveURL(new RegExp('date='+next));
+    else {
+      await expect(page.locator('.day.is-selected')).toHaveClass(/is-matched/);
+      const selected=await page.locator('.day.is-selected').getAttribute('data-date');
+      expect(selected > origin).toBe(true);
+    }
+    await expect(page.locator('.day.is-selected')).toHaveClass(/is-matched/);
+    await expect(page.locator('.day.is-selected')).toBeFocused();
+    await page.locator('#day-filter').press('Shift+Enter');
+    if(keyword!=='角') await expect(page).toHaveURL(new RegExp('date='+origin.replace('2026-02-19','2026-02-18')));
+  }
+});
+
+test('无匹配与两端边界可结束，修改查询和选日可以取消旧搜索',async ({page}) => {
+  for(const [date,button] of [['1900-01-01','#search-prev'],['2100-12-31','#search-next'],['2099-12-01','#search-next']]) {
+    await page.goto('/DayPillar/?date='+date);
+    await page.locator('#day-filter').fill('不存在的词条');
+    await page.locator(button).click();
+    await expect(page.locator('#filter-result')).toContainText('查询边界');
+    await expect(page).toHaveURL(new RegExp('date='+date));
+  }
+  await openCalendar(page);
+  // 同一事件循环内在第一次异步让出线程时变更状态，确定性覆盖取消竞争。
+  await page.evaluate(() => {
+    const input=document.querySelector('#day-filter');
+    input.value='不存在的词条';
+    input.dispatchEvent(new Event('input'));
+    document.querySelector('#search-next').click();
+    document.querySelector('[data-date="2026-10-18"]').click();
+    input.value='天罡';
+    input.dispatchEvent(new Event('input'));
+  });
+  await expect(page).toHaveURL(/date=2026-10-18/);
+  await expect(page.locator('#search-next')).toBeEnabled();
+  await page.locator('#search-next').click();
+  await expect(page).toHaveURL(/date=2026-12-16/);
+});
+
+test('移动抽屉与跨月搜索后退前进不循环，键盘移动不增加历史',async ({page}) => {
+  await page.setViewportSize({width:375,height:800});
+  await openCalendar(page);
+  const length=await page.evaluate(()=>history.length);
+  await page.locator('[data-date="2026-10-18"]').click();
+  await expect(page.locator('#detail-panel')).toHaveClass(/is-open/);
+  await page.goBack();
+  await expect(page.locator('#detail-panel')).not.toHaveClass(/is-open/);
+  await expect(page.locator('[data-date="2026-10-17"]')).toBeFocused();
+  await page.goForward();
+  await expect(page.locator('[data-date="2026-10-18"]')).toHaveAttribute('aria-pressed','true');
+  await page.keyboard.press('ArrowRight');
+  await page.keyboard.press('ArrowRight');
+  expect(await page.evaluate(()=>history.length)).toBe(length+1);
+  await page.goBack();
+  await expect(page).toHaveURL(/date=2026-10-17/);
+  await page.goForward();
+  await expect(page).toHaveURL(/date=2026-10-20/);
+  await page.locator('[data-change="1"]').click();
+  await expect(page).toHaveURL(/date=2026-11-20/);
+  await page.goBack();
+  await expect(page).toHaveURL(/date=2026-10-20/);
+});
+
+test('无日期链接初始状态也可在后退时恢复',async ({page}) => {
+  await page.clock.install({time:new Date('2026-10-17T04:00:00Z')});
+  await page.goto('/DayPillar/');
+  await expect(page).toHaveURL(/date=2026-10-17/);
+  await page.locator('[data-date="2026-10-18"]').click();
+  await page.goBack();
+  await expect(page).toHaveURL(/date=2026-10-17/);
+});
+
+
+test('全范围无效名称无需扫描，长查询仍能处理取消事件',async ({page}) => {
+  await page.goto('/DayPillar/?date=1900-01-01');
+  await page.locator('#day-filter').fill('不存在的词条');
+  await page.locator('#search-next').click();
+  await expect(page.locator('#filter-result')).toContainText('查询边界');
+  await expect(page).toHaveURL(/date=1900-01-01/);
+  await expect(page.locator('#search-next')).toBeEnabled();
+  // 两个真实名称组成无匹配查询；用浏览器计时事件取消，验证异步让出线程。
+  await page.evaluate(() => {
+    const input=document.querySelector('#day-filter');
+    input.value='甲子 火雷噬嗑';
+    input.dispatchEvent(new Event('input'));
+    document.querySelector('#search-next').click();
+    setTimeout(()=>{
+      input.value='天罡';
+      input.dispatchEvent(new Event('input'));
+    },0);
+  });
+  await expect(page.locator('#day-filter')).toHaveValue('天罡');
+  await expect(page.locator('#search-next')).toBeEnabled();
+  await page.locator('#search-next').click();
+  await expect(page.locator('.day.is-selected')).toHaveClass(/is-matched/);
+  await expect(page).not.toHaveURL(/date=1900-01-01/);
+});
+
+test('完整日期查询直接定位到远年，非法或反向日期不跳转',async ({page}) => {
+  await page.goto('/DayPillar/?date=1900-01-01');
+  await page.locator('#day-filter').fill('2099-12-31');
+  await page.locator('#day-filter').press('Enter');
+  await expect(page).toHaveURL(/date=2099-12-31/);
+  for(const value of ['2101-01-01','2100-02-30','1900-01-01']) {
+    await page.locator('#day-filter').fill(value);
+    await page.locator('#search-next').click();
+    await expect(page.locator('#filter-result')).toContainText('查询边界');
+    await expect(page).toHaveURL(/date=2099-12-31/);
+  }
+});
+
+test('移动端详情可用 Enter 和空格展开，折叠后的来源链接不截获焦点',async ({page}) => {
+  await page.setViewportSize({width:320,height:800});
+  await openCalendar(page);
+  await page.locator('[data-date="2026-10-17"]').click();
+  const summary=page.locator('#source-disclosure summary');
+  await summary.focus();
+  await page.keyboard.press('Enter');
+  await expect(page.locator('#source-disclosure')).toHaveAttribute('open','');
+  await page.keyboard.press('Tab');
+  await expect(page.locator('#source-disclosure a').first()).toBeFocused();
+  await summary.focus();
+  await page.keyboard.press('Space');
+  await expect(page.locator('#source-disclosure')).not.toHaveAttribute('open','');
+  await page.keyboard.press('Tab');
+  await expect(page.locator('#detail-close')).toBeFocused();
+});
+
+test('损坏偏好回到响应式选择，禁止存储时切换仍可用',async ({page}) => {
+  await page.addInitScript(() => localStorage.setItem('daypillar-display-mode','broken'));
+  await page.setViewportSize({width:375,height:800});
+  await openCalendar(page);
+  await expect(page.locator('#calendar-grid')).toHaveClass(/is-compact/);
+  await page.setViewportSize({width:1440,height:900});
+  await expect(page.locator('#calendar-grid')).not.toHaveClass(/is-compact/);
+  await page.addInitScript(() => {
+    Object.defineProperty(window,'localStorage',{get(){throw new DOMException('Denied','SecurityError');}});
+  });
+  await page.reload();
+  await page.locator('#mode-button').click();
+  await expect(page.locator('#mode-button')).toHaveAttribute('aria-pressed','true');
+  await expect(page.locator('#mode-button')).toHaveText('详细');
+  await expect(page.locator('#calendar-grid')).toHaveClass(/is-compact/);
+  await page.setViewportSize({width:375,height:800});
+  await page.locator('#mode-button').click();
+  await expect(page.locator('#mode-button')).toHaveAttribute('aria-pressed','false');
+  await expect(page.locator('#calendar-grid')).not.toHaveClass(/is-compact/);
+  await expect(page.locator('#error-toast')).toBeHidden();
+});

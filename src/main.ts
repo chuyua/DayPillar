@@ -6,6 +6,7 @@ import {
 import {guaEntries, lookupDayGua} from './data/gua-ying.mjs';
 import {renderHexagram} from './data/hexagram.mjs';
 import {matchesDay} from './data/day-filter.mjs';
+import {canMatchQuery} from './data/search-query.mjs';
 import {boundedCacheGet} from './data/bounded-cache.mjs';
 import {HEXAGRAM_SOURCE, lookupHexagramIntro, lookupCultureEntry} from './data/cultural-notes.mjs';
 import {deriveTraditionalAlmanac} from './data/traditional-almanac.mjs';
@@ -182,26 +183,40 @@ async function findAdjacentMatch(direction: 1 | -1): Promise<void> {
   applyDayFilter();
   $('#filter-result').textContent = '正在跨月查询…';
   try {
-    // Only calculate the months being searched. Yield after a small batch so the
-    // 1900–2100 no-result case does not block rendering or keyboard interaction.
-    let target = {year:view.year,month:view.month};
-    for (let step = 0; step < 201 * 12; step++) {
+    if (!canMatchQuery(keyword)) {
+      $('#filter-result').textContent = '已到 1900–2100 年查询边界，未找到更多匹配';
+      return;
+    }
+    // Full ISO dates can be located directly without scanning intervening years.
+    if (/^\d{4}-\d{2}-\d{2}$/.test(keyword)) {
+      if (parseISO(keyword) && (direction > 0 ? keyword > origin : keyword < origin)) {
+        pickDate(keyword,{focusDay:true,historyMode:'push'});
+      } else {
+        $('#filter-result').textContent = '已到 1900–2100 年查询边界，未找到更多匹配';
+      }
+      return;
+    }
+    // Scan only as far as needed, reusing visible cells. Yield by elapsed time
+    // rather than whole months so slow devices can still edit/cancel a query.
+    const start = new Date(origin+'T00:00:00Z').getTime();
+    const minimum = Date.UTC(1900,0,1), maximum = Date.UTC(2100,11,31);
+    let batchStart = performance.now();
+    for (let time = start + direction*86_400_000;
+      time >= minimum && time <= maximum; time += direction*86_400_000) {
       if (run !== searchSerial || keyword !== dayFilter) return;
-      if (target.year < 1900 || target.year > 2100) break;
-      const key = `${target.year}-${target.month}`;
-      const days = key === monthKey ? monthCells
-        : boundedCacheGet(monthCache,key,3,()=>getMonthCells(target.year,target.month));
-      const candidates = days.filter(day =>
-        day.year === target.year && day.month === target.month &&
-        (direction > 0 ? day.iso > origin : day.iso < origin) &&
-        matchesDay(day,keyword));
-      if (candidates.length) {
-        const match = direction > 0 ? candidates[0] : candidates[candidates.length - 1];
-        pickDate(match.iso,{focusDay:true,historyMode:'push'});
+      const date = new Date(time);
+      const year = date.getUTCFullYear(), month = date.getUTCMonth()+1, day = date.getUTCDate();
+      const candidate = (year === view.year && month === view.month
+        ? monthCells.find(item=>item.day === day && item.month === month) : undefined)
+        ?? getCalendarDay(year,month,day);
+      if (matchesDay(candidate,keyword)) {
+        pickDate(candidate.iso,{focusDay:true,historyMode:'push'});
         return;
       }
-      target = addMonths(target.year,target.month,direction);
-      if (step % 4 === 3) await new Promise<void>(resolve=>window.setTimeout(resolve,0));
+      if (performance.now()-batchStart >= 8) {
+        await new Promise<void>(resolve=>window.setTimeout(resolve,0));
+        batchStart = performance.now();
+      }
     }
     $('#filter-result').textContent = '已到 1900–2100 年查询边界，未找到更多匹配';
   } catch (error) {
@@ -214,6 +229,13 @@ async function findAdjacentMatch(direction: 1 | -1): Promise<void> {
       }
     }
   }
+}
+
+function cancelSearch(): void {
+  if (!searchBusy) return;
+  searchSerial++;
+  searchBusy = false;
+  applyDayFilter();
 }
 
 function updateDisplayMode(): void {
@@ -331,7 +353,7 @@ function renderDetail(): void {
           <a class="culture-source" href="${HEXAGRAM_SOURCE}" target="_blank" rel="noopener noreferrer">六十四卦资料</a>
           ${cultureEntry ? `<a class="culture-source" href="${escapeHtml(cultureEntry.source)}" target="_blank" rel="noopener noreferrer">异兽及神煞对应词条</a>` : ''}
         </div>
-        <p class="culture-disclaimer">本页按六十甲子名称关联异兽、神煞及纪名，并非全部来自《山海经》，也不表示当日实际发生某种吉凶。古法月建、月将与黄黑道为不同计算规则；唐《太白阴经》及后世校勘来源详见上方链接。宜忌来自 tyme4ts，均仅供文化考据，不作为现实决策依据。</p>
+        <p class="culture-disclaimer">本页按六十甲子名称关联异兽、神煞及纪名，并非全部来自《山海经》，也不表示当日实际发生某种吉凶。古法月建、月将与黄黑道为不同计算规则；月将名表见唐《太白阴经》；月厌与厌对见唐《天宝历》佚文的清代辑录，黄黑二道、月内天罡河魁参照清《御定星历考原》，不视为唐代原文。宜忌来自 tyme4ts，均仅供文化考据，不作为现实决策依据。</p>
       </details>
     </div>`;
   for (const id of expanded) {
@@ -379,7 +401,7 @@ function openDetail(): void {
   document.body.classList.add('drawer-open');
   panel.scrollTop = 0;
   const focusClose = (): void => {
-    if (panel.classList.contains('is-open')) {
+    if (panel.classList.contains('is-open') && !panel.contains(document.activeElement)) {
       $<HTMLButtonElement>('#detail-close').focus({preventScroll:true});
     }
   };
@@ -396,6 +418,7 @@ function pickDate(value: string, options: {
   refreshTodayMarker();
   const date = parseISO(value);
   if (!date) {showError('日期超出当前查询支持范围（1900—2100 年）');return;}
+  cancelSearch();
   const previous = selected;
   const changedMonth = date.year !== view.year || date.month !== view.month || !monthKey;
   selected = value;
@@ -404,8 +427,8 @@ function pickDate(value: string, options: {
   url.searchParams.set('date',selected);
   if (options.historyMode !== 'none') {
     const mode = options.historyMode === 'push' && selected !== previous ? 'push' : 'replace';
-    if (mode === 'push') history.pushState(null, '', url.pathname + url.search);
-    else history.replaceState(null, '', url.pathname + url.search);
+    if (mode === 'push') history.pushState(null, '', url.pathname + url.search + url.hash);
+    else history.replaceState(null, '', url.pathname + url.search + url.hash);
   }
   $<HTMLElement>('#error-toast').hidden = true;
   if (changedMonth) renderCalendar();
@@ -427,7 +450,7 @@ function moveCalendar(offset: number, preserveFocus = false): void {
   }
   const currentDay = parseISO(selected)?.day ?? 1;
   const lastDay = new Date(Date.UTC(next.year, next.month, 0)).getUTCDate();
-  pickDate(formatISO(next.year, next.month, Math.min(currentDay, lastDay)), {focusDay: preserveFocus});
+  pickDate(formatISO(next.year, next.month, Math.min(currentDay, lastDay)), {focusDay: preserveFocus, historyMode: preserveFocus ? 'replace' : 'push'});
 }
 
 function initEvents(): void {
@@ -591,13 +614,23 @@ function initEvents(): void {
   window.addEventListener('popstate', () => {
     const parsed = parseISO(new URLSearchParams(location.search).get('date') ?? '');
     const restored = parsed ?? parseISO(todayInChina());
-    if (restored) pickDate(formatISO(restored.year,restored.month,restored.day),{historyMode:'none'});
+    if (restored) {
+      closeDetail(false);
+      pickDate(formatISO(restored.year,restored.month,restored.day),{historyMode:'none',focusDay:true});
+    }
   });
 }
 
 shell();
 initEvents();
-renderCalendar();
+pickDate(selected,{historyMode:'replace'});
+// 按中国标准时间安排下一次午夜更新，前台常驻页面也能及时刷新。
+function scheduleTodayRefresh(): void {
+  refreshTodayMarker();
+  const nextMidnight = new Date(today + 'T00:00:00+08:00').getTime() + 86_400_000;
+  window.setTimeout(scheduleTodayRefresh,Math.max(1000,nextMidnight-Date.now()));
+}
+scheduleTodayRefresh();
 // 跟随操作系统深色模式，并同步浏览器顶栏颜色；无额外持久化配置。
 const darkScheme = window.matchMedia('(prefers-color-scheme: dark)');
 const syncThemeColor = (): void => {

@@ -146,6 +146,25 @@ test('日干支与 60 组卦象逐项对应，甲子日必须是天风姤／天�
   assert.equal(lookupDayGua('甲子日'), null);
 });
 
+test('查询词预检使用上游名称，保留闰月、节日、日期及组合查询', async () => {
+  const {canMatchQuery}=await import('../src/data/search-query.mjs');
+  for(const keyword of ['甲子','天罡','雨水','角宿','正月','闰二月','初一','春节','国庆节',
+    '火雷噬嗑','山天大畜','2099-12-31','甲子 天罡']) {
+    assert.equal(canMatchQuery(keyword),true,keyword);
+  }
+  for(const keyword of ['不存在的词条','unknown','天罡！！']) {
+    assert.equal(canMatchQuery(keyword),false,keyword);
+  }
+});
+
+test('六爻图无障碍名称转义属性内容，非法卦象不输出空图', () => {
+  assert.equal(renderHexagram(null),'');
+  assert.equal(renderHexagram('未知'),'');
+  const svg=renderHexagram(`天风"><&'`);
+  assert.ok(svg.includes('aria-label="天风&quot;&gt;&lt;&amp;&#39;六爻卦象图"'));
+  assert.equal(svg.includes('aria-label="天风">'),false);
+});
+
 test('六爻 SVG 按八卦上下三爻正确绘制，不修改原始卦名', () => {
   assert.deepEqual(getHexagramLines('天风姤'), [true,true,true,true,true,false]);
   assert.deepEqual(getHexagramLines('泽风大过'), [false,true,true,true,true,false]);

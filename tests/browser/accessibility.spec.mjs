@@ -89,3 +89,76 @@ test('Hallmark 精修：320px 移动日历关键文字不低于 11px 且无水�
   await page.keyboard.press('Escape');
   await expect(page.locator('#detail-panel')).not.toHaveClass(/is-open/);
 });
+
+test('辅助文字、相邻月与查询状态在双主题下具有实际 4.5:1 对比度',async ({page}) => {
+  await page.addInitScript(() => localStorage.setItem('daypillar-display-mode','detailed'));
+  await page.clock.install({time:new Date('2026-02-11T04:00:00Z')});
+  await page.goto('/DayPillar/?date=2026-02-11');
+  for(const scheme of ['light','dark']) {
+    await page.emulateMedia({colorScheme:scheme});
+    for(const width of [320,375,768,1440]) {
+      await page.setViewportSize({width,height:900});
+      // 搜索把非匹配日期置于 dimmed 状态；透明度也必须计入。
+      await page.locator('#day-filter').fill('天罡');
+      const pairs=await page.evaluate(() => {
+        const rgba=value => {
+          const channels=value.match(/[\d.]+/g).map(Number);
+          return [...channels.slice(0,3),channels[3] ?? 1];
+        };
+        const over=(top,bottom) => {
+          const a=top[3]+bottom[3]*(1-top[3]);
+          return a ? [0,1,2].map(i=>(top[i]*top[3]+bottom[i]*bottom[3]*(1-top[3]))/a).concat(a) : [0,0,0,0];
+        };
+        const pixel=(el,foreground) => {
+          let result=foreground ? rgba(getComputedStyle(el).color) : [0,0,0,0];
+          for(let node=el;node;node=node.parentElement) {
+            const style=getComputedStyle(node);
+            result=over(result,rgba(style.backgroundColor));
+            result[3]*=Number(style.opacity);
+          }
+          return 'rgb('+over(result,[255,255,255,1]).slice(0,3).join(',')+')';
+        };
+        const selectors=[
+          '.day:not(:disabled) .day-lunar','.day-other:not(:disabled) .day-top b',
+          '.day:not(:disabled) .day-cycle','.day:not(:disabled) .day-star',
+          '.day:not(:disabled) .day-gua-name','.day:not(:disabled) .day-ying',
+          '.day-term','.day-festival','.calendar-footer span','.site-footer span'
+        ];
+        return selectors.flatMap(selector=>[...document.querySelectorAll(selector)]
+          .filter(el=>el.getClientRects().length>0 && getComputedStyle(el).visibility==='visible')
+          .map(el=>({selector,text:el.textContent,foreground:pixel(el,true),background:pixel(el,false)})));
+      });
+      for(const pair of pairs) {
+        expect(contrastRatio(pair.foreground,pair.background),
+          scheme+' '+width+' '+pair.selector+' '+pair.text).toBeGreaterThanOrEqual(4.5);
+      }
+    }
+  }
+});
+
+test('日期状态与两种显示模式在双主题窄屏布局中完整显示',async ({page}) => {
+  await page.clock.install({time:new Date('2026-02-11T04:00:00Z')});
+  await page.goto('/DayPillar/?date=2026-02-11');
+  for(const scheme of ['light','dark']) {
+    await page.emulateMedia({colorScheme:scheme});
+    for(const width of [320,375,768,1440]) {
+      await page.setViewportSize({width,height:900});
+      await page.locator('#day-filter').fill('天罡');
+      await expect(page.locator('.day.is-matched').first()).toBeVisible();
+      await expect(page.locator('.day-term').first()).toBeVisible();
+      await expect(page.locator('[aria-current="date"]')).toHaveCount(1);
+      for(let mode=0;mode<2;mode++) {
+        await page.locator('#mode-button').click();
+        for(const selector of ['.day-gua-name','.day-ying']) {
+          const bounds=await page.locator('.day.is-selected '+selector).evaluate(el=>({
+            width:el.scrollWidth,client:el.clientWidth,
+            grid:document.querySelector('#calendar-grid').getBoundingClientRect().width,
+            page:document.documentElement.clientWidth
+          }));
+          expect(bounds.width).toBeLessThanOrEqual(bounds.client+1);
+          expect(bounds.grid).toBeLessThanOrEqual(bounds.page);
+        }
+      }
+    }
+  }
+});
