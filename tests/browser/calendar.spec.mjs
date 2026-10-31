@@ -123,7 +123,7 @@ test('唐代月将与月厌、厌对、金匮独立历注，节气前后结果�
   await expect(panel.locator('.ancient-item').filter({hasText:'月内天罡／河魁'})).toContainText('罡巳 · 魁亥');
   await expect(panel.locator('.ancient-item').filter({hasText:'十二月将'})).toContainText('神后 · 子');
   await expect(page.locator('.ancient-intersection')).toContainText('同时出现');
-  await expect(page.locator('.ancient-sources a')).toHaveCount(4);
+  await expect(page.locator('.ancient-sources a')).toHaveCount(6);
 
   await page.goto('/DayPillar/?date=2026-02-18');
   await page.locator('#ancient-disclosure summary').click();
