@@ -30,5 +30,8 @@ export function renderHexagram(name) {
       ? `<rect x="4" y="${y}" width="68" height="7" rx="1"/>`
       : `<rect x="4" y="${y}" width="28" height="7" rx="1"/><rect x="44" y="${y}" width="28" height="7" rx="1"/>`;
   }).join('');
-  return `<svg class="hexagram-figure" viewBox="0 0 76 76" role="img" aria-label="六爻卦象图">${shapes}</svg>`;
+  const accessibleName = name.replace(/[&<>"']/g, ch => ({
+    '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'
+  })[ch]);
+  return `<svg class="hexagram-figure" viewBox="0 0 76 76" role="img" aria-label="${accessibleName}六爻卦象图">${shapes}</svg>`;
 }

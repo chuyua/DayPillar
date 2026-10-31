@@ -146,6 +146,25 @@ test('日干支与 60 组卦象逐项对应，甲子日必须是天风姤／天�
   assert.equal(lookupDayGua('甲子日'), null);
 });
 
+test('查询词预检使用上游名称，保留闰月、节日、日期及组合查询', async () => {
+  const {canMatchQuery}=await import('../src/data/search-query.mjs');
+  for(const keyword of ['甲子','天罡','雨水','角宿','正月','闰二月','初一','春节','国庆节',
+    '火雷噬嗑','山天大畜','2099-12-31','甲子 天罡']) {
+    assert.equal(canMatchQuery(keyword),true,keyword);
+  }
+  for(const keyword of ['不存在的词条','unknown','天罡！！']) {
+    assert.equal(canMatchQuery(keyword),false,keyword);
+  }
+});
+
+test('六爻图无障碍名称转义属性内容，非法卦象不输出空图', () => {
+  assert.equal(renderHexagram(null),'');
+  assert.equal(renderHexagram('未知'),'');
+  const svg=renderHexagram(`天风"><&'`);
+  assert.ok(svg.includes('aria-label="天风&quot;&gt;&lt;&amp;&#39;六爻卦象图"'));
+  assert.equal(svg.includes('aria-label="天风">'),false);
+});
+
 test('六爻 SVG 按八卦上下三爻正确绘制，不修改原始卦名', () => {
   assert.deepEqual(getHexagramLines('天风姤'), [true,true,true,true,true,false]);
   assert.deepEqual(getHexagramLines('泽风大过'), [false,true,true,true,true,false]);
@@ -161,7 +180,7 @@ test('六爻 SVG 按八卦上下三爻正确绘制，不修改原始卦名', () 
     assert.equal(lines?.length, 6, `Cannot draw ${entry.gua}`);
     const svg = renderHexagram(entry.gua);
     assert.match(svg, /<svg class="hexagram-figure"/);
-    assert.match(svg, /aria-label="六爻卦象图"/);
+    assert.ok(svg.includes(`aria-label="${entry.gua}六爻卦象图"`));
     assert.equal((svg.match(/\sy="/g) ?? []).length >= 6, true);
   }
 });
@@ -177,6 +196,15 @@ test('查询只高亮匹配当月日期：支持干支、二十七宿、卦名�
   for (const query of ['乙丑','室宿','朱厌','腊月']) {
     assert.equal(matchesDay(sample,query),false,`Unexpected query ${query}`);
   }
+});
+
+test('复合关键词只匹配同一天内全部出现的术语，与预检保持一致', () => {
+  const item = {iso:'2026-10-17',dayCycle:'甲子',duty:'建',star27:'角宿',
+    lunarName:'初七',lunarMonthName:'九月',term:null,festival:null};
+  assert.equal(matchesDay(item, '甲子 天罡'), true);
+  assert.equal(matchesDay(item, '天罡   甲子'), true);
+  assert.equal(matchesDay(item, '甲子\t天罡'), true);
+  assert.equal(matchesDay(item, '甲子 穷奇'), false);
 });
 
 test('规范卦名可以按甲子映射检索，其他对应名称保持不变', () => {
