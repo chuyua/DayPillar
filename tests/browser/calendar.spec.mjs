@@ -289,6 +289,18 @@ test('Issue #5 跨月查询与历史记录同步，Enter 和 Shift+Enter 双向�
   await expect(page.locator('#calendar-grid [data-date="2026-10-17"]')).toHaveAttribute('aria-pressed','true');
 });
 
+test('复合查询甲子 天罡在同一日命中，并能继续跨月定位',async ({page}) => {
+  await page.goto('/DayPillar/?date=2026-10-16');
+  await page.locator('#day-filter').fill('甲子 天罡');
+  await expect(page.locator('#calendar-grid [data-date="2026-10-17"]')).toHaveClass(/is-matched/);
+  await expect(page.locator('#filter-result')).toContainText('本月匹配 1 / 31 天');
+  await page.getByRole('button',{name:'下一个匹配日期'}).click();
+  await expect(page.locator('#calendar-grid [data-date="2026-10-17"]')).toHaveAttribute('aria-pressed','true');
+  await page.getByRole('button',{name:'下一个匹配日期'}).click();
+  await expect(page.locator('#calendar-grid [data-date="2026-12-16"]')).toHaveAttribute('aria-pressed','true');
+  await expect(page.locator('#error-toast')).toBeHidden();
+});
+
 test('Issue #5 查询越过 2100 年上限能即时提示而非崩溃',async ({page}) => {
   await page.goto('/DayPillar/?date=2100-12-31');
   await page.locator('#day-filter').fill('天罡');

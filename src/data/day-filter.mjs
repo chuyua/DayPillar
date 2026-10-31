@@ -10,5 +10,6 @@ export function matchesDay(item, rawKeyword) {
     item.lunarName, item.lunarMonthName, item.term, item.festival,
     gua?.gua, gua?.ying
   ].filter(Boolean).join(' ').toLocaleLowerCase();
-  return text.includes(keyword);
+  // The preflight accepts space-separated terms: each must occur in one day.
+  return keyword.split(/\s+/).every(part => text.includes(part));
 }

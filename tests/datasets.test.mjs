@@ -198,6 +198,15 @@ test('查询只高亮匹配当月日期：支持干支、二十七宿、卦名�
   }
 });
 
+test('复合关键词只匹配同一天内全部出现的术语，与预检保持一致', () => {
+  const item = {iso:'2026-10-17',dayCycle:'甲子',duty:'建',star27:'角宿',
+    lunarName:'初七',lunarMonthName:'九月',term:null,festival:null};
+  assert.equal(matchesDay(item, '甲子 天罡'), true);
+  assert.equal(matchesDay(item, '天罡   甲子'), true);
+  assert.equal(matchesDay(item, '甲子\t天罡'), true);
+  assert.equal(matchesDay(item, '甲子 穷奇'), false);
+});
+
 test('规范卦名可以按甲子映射检索，其他对应名称保持不变', () => {
   const bite = guaEntries()[35];
   const store = guaEntries()[54];
