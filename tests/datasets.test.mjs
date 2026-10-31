@@ -161,7 +161,7 @@ test('六爻 SVG 按八卦上下三爻正确绘制，不修改原始卦名', () 
     assert.equal(lines?.length, 6, `Cannot draw ${entry.gua}`);
     const svg = renderHexagram(entry.gua);
     assert.match(svg, /<svg class="hexagram-figure"/);
-    assert.match(svg, /aria-label="六爻卦象图"/);
+    assert.ok(svg.includes(`aria-label="${entry.gua}六爻卦象图"`));
     assert.equal((svg.match(/\sy="/g) ?? []).length >= 6, true);
   }
 });
