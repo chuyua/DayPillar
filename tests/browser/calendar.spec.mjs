@@ -57,13 +57,13 @@ test('卦象短义及异兽和神煞介绍独立切换，狍鸮详情精确匹�
   await expect(page.locator('#culture-panel-beast .beast-card strong')).toHaveText('狍鸮');
   await expect(page.locator('#culture-panel-beast .culture-kind')).toHaveText('异兽 / 神兽');
   await expect(page.locator('#culture-panel-beast .beast-card p')).toContainText('羊身人面');
-  await expect(page.locator('#culture-panel-beast .culture-source')).toHaveAttribute('href','https://tgqmdj.cn/dadian_show.php?did=8&sid=54');
-  await expect(page.locator('#culture-panel-beast .culture-disclaimer')).toContainText('不表示当日');
+  await expect(page.locator('#source-disclosure .culture-source').last()).toHaveAttribute('href','https://tgqmdj.cn/dadian_show.php?did=8&sid=54');
+  await expect(page.locator('#source-disclosure .culture-disclaimer')).toContainText('不表示当日');
 
   await page.locator('#calendar-grid [data-date="2026-10-17"]').click();
   await expect(page.locator('#culture-panel-beast .beast-card strong')).toHaveText('天罡');
   await expect(page.locator('#culture-panel-beast .culture-kind')).toHaveText('神煞与术数');
-  await expect(page.locator('#culture-panel-beast .culture-source')).toHaveAttribute('href','https://tgqmdj.cn/dadian_show.php?did=6&sid=13');
+  await expect(page.locator('#source-disclosure .culture-source').last()).toHaveAttribute('href','https://tgqmdj.cn/dadian_show.php?did=6&sid=13');
   await expect(beastTab).toHaveAttribute('aria-selected','true');
   await guaTab.focus();
   await page.keyboard.press('ArrowRight');
@@ -83,10 +83,12 @@ test('异兽和神煞介绍在移动抽屉内可通过键盘访问来源、正�
   const beastTab = page.getByRole('tab',{name:'异兽和神煞介绍'});
   await beastTab.click();
   await expect(page.locator('#culture-panel-beast .beast-card strong')).toHaveText('甪端');
-  await expect(page.locator('#culture-panel-beast .culture-source')).toHaveAttribute('href','https://tgqmdj.cn/dadian_show.php?did=7&sid=30');
+  await expect(page.locator('#source-disclosure .culture-source').last()).toHaveAttribute('href','https://tgqmdj.cn/dadian_show.php?did=7&sid=30');
   await beastTab.focus();
   await page.keyboard.press('Tab');
-  await expect(page.locator('#culture-panel-beast .culture-source')).toBeFocused();
+  await expect(page.locator('#star-disclosure summary')).toBeFocused();
+  await page.keyboard.press('Tab');
+  await expect(page.locator('#source-disclosure summary')).toBeFocused();
   await page.keyboard.press('Tab');
   await expect(page.locator('#detail-close')).toBeFocused();
   await page.keyboard.press('Escape');
@@ -103,7 +105,7 @@ test('九星与空亡词条保留原映射名称，提供独立分类和精确�
     await page.getByRole('tab',{name:'异兽和神煞介绍'}).click();
     await expect(page.locator('#culture-panel-beast .beast-card strong')).toHaveText(name);
     await expect(page.locator('#culture-panel-beast .culture-kind')).toHaveText(category);
-    await expect(page.locator('#culture-panel-beast .culture-source')).toHaveAttribute('href',`https://tgqmdj.cn/dadian_show.php?${link}`);
+    await expect(page.locator('#source-disclosure .culture-source').last()).toHaveAttribute('href',`https://tgqmdj.cn/dadian_show.php?${link}`);
     await expect(page.locator('#culture-panel-beast .beast-card p')).not.toBeEmpty();
     await expect(page.locator('#error-toast')).toBeHidden();
   }
@@ -111,6 +113,7 @@ test('九星与空亡词条保留原映射名称，提供独立分类和精确�
 
 test('唐代月将与月厌、厌对、金匮独立历注，节气前后结果可复核',async ({page}) => {
   await page.goto('/DayPillar/?date=2026-02-11');
+  await page.locator('#ancient-disclosure summary').click();
   const panel=page.locator('.ancient-almanac');
   await expect(panel).toBeVisible();
   await expect(panel.locator('.ancient-item').filter({hasText:'阳建 · 月建'})).toContainText('寅建 · 1月');
@@ -123,10 +126,12 @@ test('唐代月将与月厌、厌对、金匮独立历注，节气前后结果�
   await expect(page.locator('.ancient-sources a')).toHaveCount(4);
 
   await page.goto('/DayPillar/?date=2026-02-18');
+  await page.locator('#ancient-disclosure summary').click();
   await expect(page.locator('.ancient-item').filter({hasText:'阳建 · 月建'})).toContainText('寅建');
   await expect(page.locator('.ancient-item').filter({hasText:'十二月将'})).toContainText('登明 · 亥');
 
   await page.goto('/DayPillar/?date=2026-02-23');
+  await page.locator('#ancient-disclosure summary').click();
   await expect(page.locator('.ancient-item').filter({hasText:'月厌对冲 · 厌对'})).toContainText('今日值厌对');
   await expect(page.locator('.ancient-item').filter({hasText:'十二黄黑道'})).toContainText('金匮 · 黄道');
   await expect(page.locator('.ancient-item').filter({hasText:'十二月将'})).toContainText('登明 · 亥');
@@ -135,6 +140,7 @@ test('唐代月将与月厌、厌对、金匮独立历注，节气前后结果�
 
 test('月内天罡／河魁与同名的固定六十甲子对应资料不混用',async ({page}) => {
   await page.goto('/DayPillar/?date=2026-02-12');
+  await page.locator('#ancient-disclosure summary').click();
   const k=page.locator('.ancient-item').filter({hasText:'月内天罡／河魁'});
   await expect(k).toContainText('罡巳 · 魁亥');
   await expect(k).toContainText('今日值月内天罡');
@@ -148,6 +154,8 @@ test('320px 手机仍可读古法历注及来源，选日无横向溢出',async 
   await page.goto('/DayPillar/?date=2026-02-11');
   await page.locator('#calendar-grid [data-date="2026-02-11"]').click();
   await expect(page.locator('#detail-panel')).toHaveClass(/is-open/);
+  await page.locator('#ancient-disclosure summary').click();
+  await page.locator('#source-disclosure summary').click();
   await expect(page.locator('.ancient-almanac')).toBeVisible();
   await expect(page.locator('.ancient-sources a').first()).toHaveAttribute('rel','noopener noreferrer');
   const bounds=await page.evaluate(()=>({
@@ -254,12 +262,72 @@ test('跨中国午夜后标签页恢复与今日按钮使用最新日期',async 
   await page.clock.install({time:new Date('2026-10-27T15:50:00.000Z')});
   await page.goto('/DayPillar/?date=2026-10-27');
   await expect(page.locator('#calendar-grid [data-date="2026-10-27"]')).toHaveClass(/is-today/);
+  await expect(page.locator('#calendar-grid [data-date="2026-10-27"]')).toHaveAttribute('aria-current','date');
   await page.clock.fastForward(20*60*1000);
   await page.evaluate(() => document.dispatchEvent(new Event('visibilitychange')));
   await expect(page.locator('#calendar-grid [data-date="2026-10-28"]')).toHaveClass(/is-today/);
+  await expect(page.locator('#calendar-grid [data-date="2026-10-28"]')).toHaveAttribute('aria-current','date');
   await expect(page.locator('#calendar-grid [data-date="2026-10-27"]')).not.toHaveClass(/is-today/);
+  await expect(page.locator('#calendar-grid [data-date="2026-10-27"]')).not.toHaveAttribute('aria-current','date');
   await page.locator('#today-button').click();
   await expect(page.locator('#calendar-grid [data-date="2026-10-28"]')).toHaveAttribute('aria-pressed','true');
+});
+
+test('Issue #5 跨月查询与历史记录同步，Enter 和 Shift+Enter 双向跳转',async ({page}) => {
+  await page.goto('/DayPillar/?date=2026-10-17');
+  await page.locator('#day-filter').fill('天罡');
+  await page.getByRole('button',{name:'下一个匹配日期'}).click();
+  await expect(page.locator('#calendar-grid [data-date="2026-12-16"]')).toHaveAttribute('aria-pressed','true');
+  await expect(page.locator('#calendar-grid [data-date="2026-12-16"]')).toBeFocused();
+  await expect(page).toHaveURL(/date=2026-12-16/);
+  await page.locator('#day-filter').focus();
+  await page.keyboard.press('Shift+Enter');
+  await expect(page.locator('#calendar-grid [data-date="2026-10-17"]')).toHaveAttribute('aria-pressed','true');
+  await page.goBack();
+  await expect(page.locator('#calendar-grid [data-date="2026-12-16"]')).toHaveAttribute('aria-pressed','true');
+  await page.goForward();
+  await expect(page.locator('#calendar-grid [data-date="2026-10-17"]')).toHaveAttribute('aria-pressed','true');
+});
+
+test('Issue #5 查询越过 2100 年上限能即时提示而非崩溃',async ({page}) => {
+  await page.goto('/DayPillar/?date=2100-12-31');
+  await page.locator('#day-filter').fill('天罡');
+  await page.getByRole('button',{name:'下一个匹配日期'}).click();
+  await expect(page.locator('#filter-result')).toContainText('查询边界');
+  await expect(page.locator('#calendar-grid [data-date="2100-12-31"]')).toHaveAttribute('aria-pressed','true');
+  await expect(page.locator('#error-toast')).toBeHidden();
+});
+
+test('Issues #4 #6 详情折叠、来源可查且日期切换保留展开状态',async ({page}) => {
+  await page.goto('/DayPillar/?date=2026-10-17');
+  await expect(page.locator('#ancient-disclosure')).not.toHaveAttribute('open','');
+  await expect(page.locator('#star-disclosure')).not.toHaveAttribute('open','');
+  await expect(page.locator('#source-disclosure')).not.toHaveAttribute('open','');
+  await expect(page.locator('.hexagram-figure')).toHaveAttribute('aria-label','天风姤六爻卦象图');
+  await expect(page.locator('#date-detail .taboo-group')).toHaveCount(2);
+  await page.locator('#ancient-disclosure summary').click();
+  await page.locator('#source-disclosure summary').click();
+  await page.locator('#calendar-grid [data-date="2026-10-18"]').click();
+  await expect(page.locator('#ancient-disclosure')).toHaveAttribute('open','');
+  await expect(page.locator('#source-disclosure')).toHaveAttribute('open','');
+  await expect(page.locator('.ancient-almanac')).toBeVisible();
+  await expect(page.locator('#source-disclosure .ancient-sources a')).toHaveCount(6);
+});
+
+test('Issue #7 手动偏好刷新不丢失，自动偏好随窗口响应',async ({page}) => {
+  await page.setViewportSize({width:390,height:800});
+  await page.goto('/DayPillar/?date=2026-10-17');
+  await expect(page.locator('#calendar-grid')).toHaveClass(/is-compact/);
+  await page.setViewportSize({width:1060,height:800});
+  await expect(page.locator('#calendar-grid')).not.toHaveClass(/is-compact/);
+  await page.locator('#mode-button').click();
+  await expect(page.locator('#calendar-grid')).toHaveClass(/is-compact/);
+  await page.reload();
+  await expect(page.locator('#calendar-grid')).toHaveClass(/is-compact/);
+  await expect(page.locator('#mode-button')).toHaveAttribute('aria-pressed','true');
+  await page.setViewportSize({width:390,height:800});
+  await page.setViewportSize({width:1060,height:800});
+  await expect(page.locator('#calendar-grid')).toHaveClass(/is-compact/);
 });
 
 test('深色配色与浏览器 theme-color 同步',async ({page}) => {
